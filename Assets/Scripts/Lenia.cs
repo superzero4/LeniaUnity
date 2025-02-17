@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using UnityEngine;
 using System.Text;
@@ -62,6 +63,10 @@ public class Lenia : MonoBehaviour
         string filtered = "";
         string line;
         float value;
+        
+        NumberFormatInfo formatInfo = new NumberFormatInfo();
+        formatInfo.NumberDecimalSeparator = ",";
+        
         while (_reader.Peek() >= 0 && !_cancel)
         {
             line = _reader.ReadLine();
@@ -110,9 +115,9 @@ public class Lenia : MonoBehaviour
                     depth--;
                     cnt2++;
                 }
-
+                
                 filtered = filtered.Substring(cnt1, filtered.Length - (cnt1 + cnt2-1));
-                if (float.TryParse(filtered, out value))
+                if (float.TryParse(filtered, NumberStyles.Any, formatInfo, out value))
                     lenia.cells[^1][^1][^1].Add(value);
             }
         }
