@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Linq;
 using System.Text;
 using DefaultNamespace;
+using Unity.EditorCoroutines.Editor;
 using UnityEditor;
 using UnityEngine.Assertions;
 
@@ -17,16 +18,45 @@ public struct Lenia2D
 
 public class Lenia : MonoBehaviour
 {
-    [SerializeField] private TextureFormat _format;
+    [Header("Run settings")] [SerializeField]
+    private bool _run;
+
+    [SerializeField] private bool _cancel;
+    [SerializeField] private bool _clearFlipbookOnRun;
+
+    [Header("References")] [SerializeField]
+    private TextureFlipbook _flipbook;
+
+    [SerializeField] private Texture3DSO _textureSO;
+
+    [Header("Texture Settings")] [SerializeField]
+    private TextureFormat _format;
+
     [SerializeField, Range(1, 4)] private int _pixelSize;
     [SerializeField] private string _path;
-    [SerializeField] private Texture3DSO _textureSO;
-    [SerializeField] private Texture3D _texture;
+    [Header("Result")] [SerializeField] private Texture3D _texture;
+    private EditorCoroutine _running;
     private StreamReader _reader;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    IEnumerator Start()
+    private void OnValidate()
     {
+        if (_run)
+        {
+            _run = false;
+            if (_running == null)
+            {
+                _running = EditorCoroutineUtility.StartCoroutine(ProcessFile(), this);
+            }
+        }
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    IEnumerator ProcessFile()
+    {
+        //Can be modified externally of this method to block the execution
+        _cancel = false;
+        if(_clearFlipbookOnRun)
+            _flipbook.Textures.Clear();
         DirectoryInfo parent = new DirectoryInfo(Application.dataPath).Parent;
         _reader = new StreamReader(File.OpenRead(Path.Combine(parent.FullName, _path)));
         Lenia2D lenia = new Lenia2D();
@@ -34,9 +64,12 @@ public class Lenia : MonoBehaviour
         int depth = -1;
         int step = -1;
         StringBuilder sb = new();
-        while (_reader.Peek() >= 0)
+        string filtered = "";
+        string line;
+        float value;
+        while (_reader.Peek() >= 0 && !_cancel)
         {
-            var line = _reader.ReadLine();
+            line = _reader.ReadLine();
             foreach (var str in line.Split(','))
             {
                 sb.Clear();
@@ -48,8 +81,9 @@ public class Lenia : MonoBehaviour
                     }
                 }
 
-                string filtered = sb.ToString();
-                while (filtered.Length != 0 && filtered[0] == '[')
+                filtered = sb.ToString();
+                int cnt1 = 0;
+                while (cnt1 < filtered.Length && filtered[cnt1] == '[')
                 {
                     depth++;
                     switch (depth)
@@ -59,33 +93,32 @@ public class Lenia : MonoBehaviour
                             step++;
                             if (step >= 1)
                                 SetTexture(lenia, step - 1);
-                            Debug.LogWarning("Parsed..");
+                            Debug.LogWarning("Parsed one generation");
+                            yield return new WaitForEndOfFrame();
                             break;
                         case 2:
                             lenia.cells[^1].Add(new());
-                            Debug.Log("Parsed...");
+                            //Debug.Log("Parsed...");
                             break;
                         case 3:
                             //case 4:
                             lenia.cells[^1][^1].Add(new());
-                            yield return new WaitForEndOfFrame();
                             break;
                     }
 
-                    filtered = filtered.Remove(0, 1);
+                    cnt1++;
                 }
 
-
-                if (float.TryParse(filtered, out var f))
-                {
-                    lenia.cells[^1][^1][^1].Add(f);
-                }
-
-                while (filtered.Length != 0 && filtered[^1] == ']')
+                int cnt2 = 1;
+                while (cnt2<filtered.Length-1 && filtered[^cnt2] == ']')
                 {
                     depth--;
-                    filtered = filtered.Remove(filtered.Length - 1);
+                    cnt2++;
                 }
+
+                filtered = filtered.Substring(cnt1, filtered.Length - (cnt1 + cnt2-1));
+                if (float.TryParse(filtered, out value))
+                    lenia.cells[^1][^1][^1].Add(value);
             }
         }
 
@@ -138,7 +171,8 @@ public class Lenia : MonoBehaviour
         }
 
         _texture.Apply();
-        _textureSO.SetTexture(_texture, "Gen"+step.ToString()+"-Pix"+_pixelSize+"-"+_format.ToString());
+        _textureSO.SetTexture(_texture, "Gen" + step.ToString() + "-Pix" + _pixelSize + "-" + _format.ToString());
+        _flipbook.Textures.Add(_texture);
         Debug.LogWarning("Texture set");
     }
 

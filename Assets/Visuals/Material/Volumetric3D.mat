@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: New Material
-  m_Shader: {fileID: 4800000, guid: d0e12b7a59c3a1b448523ca0fa23a1be, type: 3}
+  m_Name: Volumetric3D
+  m_Shader: {fileID: 4800000, guid: 7713008d2c8b2fa419ba0c52649c6a1f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -45,7 +45,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 11700000, guid: e80b277da72f6a445a115bce275f092b, type: 2}
+        m_Texture: {fileID: 11700000, guid: c5f09cf8655319449ad0f1a5bbfd34f3, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 6.3, y: 0}
     - _MetallicGlossMap:
@@ -62,10 +62,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Alpha: 0.485
+    - _Alpha: 0.112
     - _BumpScale: 1
     - _Cutoff: 0.5
-    - _Depth: 0
+    - _Depth: 0.73
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _GlossMapScale: 1
@@ -78,6 +78,7 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
+    - _StepSize: 0.049
     - _UVSec: 0
     - _ZWrite: 1
     - _ramp: 1
