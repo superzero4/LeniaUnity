@@ -1,0 +1,3 @@
+[submodule "External/Lenia"]
+	path = External/Lenia
+	url = https://github.com/superzero4/Lenia.git
