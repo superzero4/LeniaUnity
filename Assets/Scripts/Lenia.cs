@@ -3,17 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using System.Linq;
 using System.Text;
-using DefaultNamespace;
 using Unity.EditorCoroutines.Editor;
-using UnityEditor;
-using UnityEngine.Assertions;
 
 [Serializable]
 public struct Lenia2D
 {
-    [SerializeField] public List<List<List<List<float>>>> cells;
+    public List<List<List<List<float>>>> cells;
 }
 
 public class Lenia : MonoBehaviour
@@ -49,8 +45,7 @@ public class Lenia : MonoBehaviour
             }
         }
     }
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    
     IEnumerator ProcessFile()
     {
         //Can be modified externally of this method to block the execution
