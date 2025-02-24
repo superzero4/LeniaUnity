@@ -22,7 +22,7 @@ public class Lenia : MonoBehaviour
     [SerializeField] private bool _clearFlipbookOnRun;
 
     [Header("References")] [SerializeField]
-    private TextureFlipbook _flipbook;
+    private MaterialPropertyFlipbook _flipbook;
 
     [SerializeField] private Texture3DSO _textureSO;
 
@@ -121,8 +121,8 @@ public class Lenia : MonoBehaviour
                     lenia.cells[^1][^1][^1].Add(value);
             }
         }
-
         Debug.LogWarning("Done");
+        _reader.Close();
     }
 
     private void SetTexture(Lenia2D lenia, int step)
