@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using UnityEngine;
 using System.Text;
+using NaughtyAttributes;
 using Unity.EditorCoroutines.Editor;
 
 [Serializable]
@@ -15,15 +16,8 @@ public struct Lenia2D
 
 public class Lenia : MonoBehaviour
 {
-    [Header("Run settings")] [SerializeField]
-    private bool _run;
-
-    [SerializeField] private bool _cancel;
-    [SerializeField] private bool _clearFlipbookOnRun;
-
-    [Header("References")] [SerializeField]
-    private MaterialPropertyFlipbook _flipbook;
-
+    [Header("Run settings")] 
+    private bool _cancel;
     [SerializeField] private Texture3DSO _textureSO;
 
     [Header("Texture Settings")] [SerializeField]
@@ -35,24 +29,28 @@ public class Lenia : MonoBehaviour
     private EditorCoroutine _running;
     private StreamReader _reader;
 
-    private void OnValidate()
+    [Button("Process the file at _path into 3DTextures")]
+    private void Run()
     {
-        if (_run)
+        if (_running == null)
         {
-            _run = false;
-            if (_running == null)
-            {
-                _running = EditorCoroutineUtility.StartCoroutine(ProcessFile(), this);
-            }
+            _running = EditorCoroutineUtility.StartCoroutine(ProcessFile(), this);
+        }
+        else
+        {
+            Debug.LogWarning("A file processing is already running, wait for it to end or hit Cancel and you'll be able to run again after it automatically cleanly exited");
         }
     }
-    
+    [Button("Cancel")]
+    private void Cancel()
+    {
+        _cancel = true;
+    }
+
     IEnumerator ProcessFile()
     {
         //Can be modified externally of this method to block the execution
         _cancel = false;
-        if(_clearFlipbookOnRun)
-            _flipbook.Textures.Clear();
         DirectoryInfo parent = new DirectoryInfo(Application.dataPath).Parent;
         _reader = new StreamReader(File.OpenRead(Path.Combine(parent.FullName, _path)));
         Lenia2D lenia = new Lenia2D();
@@ -63,10 +61,10 @@ public class Lenia : MonoBehaviour
         string filtered = "";
         string line;
         float value;
-        
+
         NumberFormatInfo formatInfo = new NumberFormatInfo();
         formatInfo.NumberDecimalSeparator = ",";
-        
+
         while (_reader.Peek() >= 0 && !_cancel)
         {
             line = _reader.ReadLine();
@@ -110,17 +108,18 @@ public class Lenia : MonoBehaviour
                 }
 
                 int cnt2 = 1;
-                while (cnt2<filtered.Length-1 && filtered[^cnt2] == ']')
+                while (cnt2 < filtered.Length - 1 && filtered[^cnt2] == ']')
                 {
                     depth--;
                     cnt2++;
                 }
-                
-                filtered = filtered.Substring(cnt1, filtered.Length - (cnt1 + cnt2-1));
+
+                filtered = filtered.Substring(cnt1, filtered.Length - (cnt1 + cnt2 - 1));
                 if (float.TryParse(filtered, NumberStyles.Any, formatInfo, out value))
                     lenia.cells[^1][^1][^1].Add(value);
             }
         }
+
         Debug.LogWarning("Done");
         _reader.Close();
     }
@@ -172,7 +171,6 @@ public class Lenia : MonoBehaviour
 
         _texture.Apply();
         _textureSO.SetTexture(_texture, "Gen" + step.ToString() + "-Pix" + _pixelSize + "-" + _format.ToString());
-        _flipbook.Textures.Add(_texture);
         Debug.LogWarning("Texture set");
     }
 
