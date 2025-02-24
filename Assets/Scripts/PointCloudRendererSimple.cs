@@ -13,13 +13,6 @@ public class PointCloudRendererSimple : MonoBehaviour
     private ComputeBuffer pointBuffer;
 
 
-    [StructLayout(LayoutKind.Sequential)]
-    struct PointData
-    {
-        public Vector3 position;
-        public float color;
-    }
-
     void Start()
     {
         pointMaterial = new Material(pointShader);
@@ -32,9 +25,9 @@ public class PointCloudRendererSimple : MonoBehaviour
     {
         // Get the pixel array from the texture
         Color[] pixelArray = texture.GetPixels();
-        PointData[] pointDataArray = new PointData[pixelArray.Length];
+        Vector4[] pointDataArray = new Vector4[pixelArray.Length];
         // Create a ComputeBuffer with the same length as the pixel array
-        pointBuffer = new ComputeBuffer(pixelArray.Length, sizeof(float) * 4);
+
         for (int i = 0; i < texture.width; i++)
         {
             for (int j = 0; j < texture.height; j++)
@@ -42,13 +35,16 @@ public class PointCloudRendererSimple : MonoBehaviour
                 for (int k = 0; k < texture.depth; k++)
                 {
                     int index = i * texture.depth * texture.height + j * texture.depth + k;
-                    pointDataArray[index] = new PointData
-                    {
-                        position = new Vector3(i, j, k),
-                        color = pixelArray[index].r
-                    };
+                    pointDataArray[index] = new Vector4(i, j, k, pixelArray[index].r);
                 }
             }
+        }
+
+        if (pointBuffer == null || !pointBuffer.IsValid() || pointBuffer.count != pixelArray.Length)
+        {
+            if (pointBuffer != null)
+                pointBuffer.Release();
+            pointBuffer = new ComputeBuffer(pixelArray.Length, sizeof(float) * 4);
         }
 
         // Set the data of the ComputeBuffer using the pixel array
@@ -65,7 +61,7 @@ public class PointCloudRendererSimple : MonoBehaviour
         pointMaterial.SetColor("_Tint", pointTint);
         pointMaterial.SetFloat("_PointSize", pointSize);
         pointMaterial.SetMatrix("_Transform", transform.worldToLocalMatrix);
-        
+
         pointMaterial.SetPass(0);
         //Draw the points
         Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count);
@@ -74,7 +70,6 @@ public class PointCloudRendererSimple : MonoBehaviour
     private void UpdateView()
     {
         pointMaterial.SetBuffer("_PointBuffer", pointBuffer);
-
     }
 
     void OnDestroy()
