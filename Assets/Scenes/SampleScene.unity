@@ -251,7 +251,6 @@ MonoBehaviour:
   - {fileID: 11700000, guid: 87ccdac03bf35f64288bf73035b10987, type: 2}
   - {fileID: 11700000, guid: ffa78cb029b3089439f862d6ee183a10, type: 2}
   _delay: 0.001
-  _loadTextures: 0
   _texturePath: Assets/Visuals/Textures
   _pcs: {fileID: 212265864}
 --- !u!1 &705507993
@@ -453,6 +452,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2073033187}
   - component: {fileID: 2073033186}
+  - component: {fileID: 2073033188}
   m_Layer: 0
   m_Name: File
   m_TagString: Untagged
@@ -472,10 +472,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0e0c06a0c960104dbd9eda4ca02ef66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _run: 0
-  _cancel: 0
-  _clearFlipbookOnRun: 1
-  _flipbook: {fileID: 0}
   _textureSO: {fileID: 11400000, guid: d2bcbee08a1183c4e8c1355960b99638, type: 2}
   _format: 18
   _pixelSize: 1
@@ -496,6 +492,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2073033188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2073033185}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49dcfdde7713424a8b23532e8c33f2f6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  folder: External/Lenia/Python
+  _filename: testPython
+  _args: []
+  _process:
+    rid: 3635390626489172296
+  _output:
+    rid: -2
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 3635390626489172296
+      type: {class: Process, ns: System.Diagnostics, asm: System}
+      data: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
