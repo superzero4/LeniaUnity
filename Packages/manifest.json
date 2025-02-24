@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.dbrizov.naughtyattributes": "https://github.com/dbrizov/NaughtyAttributes.git#upm",
     "com.unity.collab-proxy": "2.7.1",
     "com.unity.feature.development": "1.0.2",
     "com.unity.inputsystem": "1.11.2",
