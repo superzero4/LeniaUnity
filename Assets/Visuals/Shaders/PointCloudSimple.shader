@@ -9,11 +9,15 @@ Shader "PointCloud/PointCloudSimple"
     {
         Tags
         {
-            "RenderType"="Opaque"
+            "Queue" = "Transparent"
+            "RenderType"="Transparent"
         }
+        Blend SrcAlpha OneMinusSrcAlpha
+        ZWrite Off
         Pass
         {
             CGPROGRAM
+            #define SQUARE_GEOMETRY 0
             #pragma vertex vert
             #pragma fragment frag
             #pragma geometry geom
@@ -41,17 +45,45 @@ Shader "PointCloud/PointCloudSimple"
                 v2f o;
                 float4 p = _PointBuffer[v.vertexID];
                 float3 position = p.xyz;
-                float4 color = float4(p.w, p.w, p.w, 1);
-                o.pos = UnityObjectToClipPos(float4(position, 1.0));
+                o.pos =
+                    UnityObjectToClipPos(
+                        float4(position, 1.0)
+                    );
                 //mul(
                 //_Transform,
                 //);
-                o.color = color * _Tint;
+                
                 o.pointSize = _PointSize;
+
+                
+                float life = p.w;
+                float4 color;
+                float fadedThreshold = 0.05;
+                float4 dead = float4(0, 0, 1, 1); // Blue
+                float4 mid = float4(0, 1, 0, 1); // Green
+                float4 full = float4(1, 0, 0, 1); // Red
+
+                 // Interpolate between colors based on lifeValue
+                if (life < 0.5)
+                {
+                    color = lerp(dead, mid, life * 2.0);
+                }
+                else
+                {
+                    color = lerp(mid, full, (life - 0.5) * 2.0);
+                }
+                //TODO fade alpha based on how close to camera, so we can be indide the thing without thig sticked to the camera
+                if (life <= fadedThreshold)
+                {
+                    //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
+                    color.a = (life / fadedThreshold)*dead.a;
+                }
+                
+                o.color = color * _Tint;
                 return o;
             }
-
-            [maxvertexcount(12)]
+            #if SQUARE_GEOMETRY
+            [maxvertexcount(36)]
             void geom(point v2f input[1], inout TriangleStream<v2f> triStream)
             {
                 v2f o;
@@ -59,50 +91,103 @@ Shader "PointCloud/PointCloudSimple"
                 float4 pos = input[0].pos;
                 float4 color = input[0].color;
 
-                // Define the base vertices of the pyramid
-                float3 baseOffsets[4] = {float3(-.5, -1, -.5), float3(0, 1, 0), float3(.5, -1, 0), float3(-.5, -1, .5)};
-                float4 baseVertices[4];
-                for (int i = 0; i < 4; i++)
+                // Define the vertices of the cube
+                float3 offsets[8] = {
+                    float3(-1, -1, -1),
+                    float3(1, -1, -1),
+                    float3(-1, 1, -1),
+                    float3(1, 1, -1),
+                    float3(-1, -1, 1),
+                    float3(1, -1, 1),
+                    float3(-1, 1, 1),
+                    float3(1, 1, 1)
+                };
+
+                float4 vertices[8];
+                for (int i = 0; i < 8; i++)
                 {
-                    baseVertices[i] = pos + float4(baseOffsets[i] * _PointSize, 0);
+                    vertices[i] =
+                        //mul(_Transform,
+                        pos + float4(offsets[i] * _PointSize, 0)
+                        //)
+                        ;
                 }
 
-                // Define the apex of the pyramid
-                float4 apex = pos + float4(0, 0, _PointSize * 2, 0);
+                // Define the indices for the 12 triangles that make up the cube
+                int3 indices[12] = {
+                    int3(0, 1, 2), int3(1, 3, 2), // Front face
+                    int3(4, 5, 6), int3(5, 7, 6), // Back face
+                    int3(0, 1, 4), int3(1, 5, 4), // Bottom face
+                    int3(2, 3, 6), int3(3, 7, 6), // Top face
+                    int3(0, 2, 4), int3(2, 6, 4), // Left face
+                    int3(1, 3, 5), int3(3, 7, 5) // Right face
+                };
 
-                // Generate the base of the pyramid (2 triangles)
-                for (int i = 0; i < 4; i++)
+                // Generate the triangles for the cube
+                for (int i = 0; i < 12; i++)
                 {
-                    o.pos = baseVertices[i];
+                    o.pos = vertices[indices[i].x];
                     o.color = color;
                     triStream.Append(o);
 
-                    o.pos = baseVertices[(i + 1) % 4];
+                    o.pos = vertices[indices[i].y];
                     o.color = color;
                     triStream.Append(o);
 
-                    o.pos = baseVertices[(i + 2) % 4];
-                    o.color = color;
-                    triStream.Append(o);
-                }
-
-                // Generate the sides of the pyramid (4 triangles)
-                for (int i = 0; i < 4; i++)
-                {
-                    o.pos = baseVertices[i];
-                    o.color = color;
-                    triStream.Append(o);
-
-                    o.pos = baseVertices[(i + 1) % 4];
-                    o.color = color;
-                    triStream.Append(o);
-
-                    o.pos = apex;
+                    o.pos = vertices[indices[i].z];
                     o.color = color;
                     triStream.Append(o);
                 }
             }
+            #else
+            [maxvertexcount(36)]
+            void geom(point v2f input[1], inout TriangleStream<v2f> triStream)
+            {
+                float4 origin = input[0].pos;
+                float2 extent = abs(UNITY_MATRIX_P._11_22 * _PointSize);
+                
+                // Copy the basic information.
+                v2f o;
+                o.pointSize = input[0].pointSize;
+                o.color = input[0].color;
+                o.pos = origin;
+                triStream.Append(o);
+                // Determine the number of slices based on the radius of the
+                // point on the screen.
+                float radius = extent.y / origin.w * _ScreenParams.y;
+                uint slices = min((radius + 1) / 5, 4) + 2;
 
+                // Slightly enlarge quad points to compensate area reduction.
+                // Hopefully this line would be complied without branch.
+                if (slices == 2) extent *= 1.2;
+
+                // Top vertex
+                o.pos.y = origin.y + extent.y;
+                o.pos.xzw = origin.xzw;
+                triStream.Append(o);
+
+                UNITY_LOOP for (uint i = 1; i < slices; i++)
+                {
+                    float sn, cs;
+                    sincos(UNITY_PI / slices * i, sn, cs);
+
+                    // Right side vertex
+                    o.pos.xy = origin.xy + extent * float2(sn, cs);
+                    triStream.Append(o);
+
+                    // Left side vertex
+                    o.pos.x = origin.x - extent.x * sn;
+                    triStream.Append(o);
+                }
+
+                // Bottom vertex
+                o.pos.x = origin.x;
+                o.pos.y = origin.y - extent.y;
+                triStream.Append(o);
+
+                triStream.RestartStrip();
+            }
+            #endif
             half4 frag(v2f i) : SV_Target
             {
                 return i.color;
