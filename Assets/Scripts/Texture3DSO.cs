@@ -1,11 +1,11 @@
-﻿using UnityEditor;
+﻿using NaughtyAttributes;
+using UnityEditor;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Texture3D", menuName = "Texture3D", order = 0)]
 public class Texture3DSO : ScriptableObject
 {
     [SerializeField] private Texture3D _texture;
-    [SerializeField] private bool _save;
     [SerializeField] private string _texturePath;
 
     public void SetTexture(Texture3D texture, string nameAppendix)
@@ -22,16 +22,7 @@ public class Texture3DSO : ScriptableObject
         AssetDatabase.CreateAsset(_texture, p);
         AssetDatabase.SaveAssets();
     }
-
-    private void OnValidate()
-    {
-        if (_save)
-        {
-            _save = false;
-            Action();
-        }
-    }
-
+    [Button("Save")]
     public void Action()
     {
         _texture = new Texture3D(2, 2, 2, TextureFormat.RFloat, false);
