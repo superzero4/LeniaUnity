@@ -38,7 +38,7 @@ namespace DefaultNamespace
 
         private IEnumerator ReadOutput()
         {
-            yield return new WaitUntil(() => _process != null && _process.Associated  && !_process.HasExited && _process.Responding);
+            //yield return new WaitUntil(() => _process != null && _process.Associated  && !_process.HasExited && _process.Responding);
             _output = _process.StandardOutput;
             while (_process != null && !_process.HasExited && _process.Responding)
             {

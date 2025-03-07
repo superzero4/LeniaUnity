@@ -25,36 +25,36 @@ Shader "Unlit/Lenia2D"
 
             // Change these for funni stuff
             const float EPSILON = 0.000001f;
-            const float samplingDist = 1;
+            const float samplingDist = 1.;
             
             const int2 iResolution = float2(64, 64);
 
-            /*
+            
             const int4 iv0 = int4(0,0,0,0);
             const int4 iv1 = int4(1,1,1,1);
             const int4 iv2 = int4(2,2,2,2);
             const int4 iv3 = int4(3,3,3,3);
-            const float4 v0 = float4(0,0,0,0);
-            const float4 v1 = float4(1,1,1,1);
-            const float4x4 m0 = float4x4(v0, v0, v0, v0);
-            const float4x4 m1 = float4x4(v1, v1, v1, v1);
-            */
+            const float4 v0 = float4(0.,0.,0.,0.);
+            const float4 v1 = float4(1.,1.,1.,1.);
+            //const float4x4 m0 = float4x4(v0, v0, v0, v0);
+            //const float4x4 m1 = float4x4(v1, v1, v1, v1);
+            
 
             // Règles à changer
             // species: GDNQYX Tessellatium (stable)
             const float baseNoise = 0.175;
             const float R = 12;  // space resolution = kernel radius
             const float T = 1;  // time resolution = number of divisions per unit time
-            const float4x4    betaLen = float4x4(1, 1, 2, 2, 1, 2, 1, 1, 1, 2, 2, 2, 1, 2, 1, 0);  // kernel ring number
-            const float4x4      beta0 = float4x4(1, 1, 1, 0., 1, 5/6, 1, 1, 1, 11/12, 3/4, 1, 1, 1/6, 1, 0);  // kernel ring heights
-            const float4x4      beta1 = float4x4(0, 0, 1/4, 1, 0, 1, 0, 0, 0, 1, 1, 11/12, 0., 1, 0, 0);
-            const float4x4      beta2 = float4x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-            const float4x4         mu = float4x4(0.242, 0.375, 0.194, 0.122, 0.413, 0.221, 0.192, 0.492, 0.426, 0.361, 0.464, 0.361, 0.235, 0.381, 0.216, 0);  // growth center
-            const float4x4      sigma = float4x4(0.061, 0.1553, 0.0361, 0.0531, 0.0774, 0.0365, 0.0649, 0.1219, 0.1759, 0.1381, 0.1044, 0.0686, 0.0924, 0.1118, 0.0748, 1);  // growth width
-            const float4x4        eta = float4x4(0.144, 0.506, 0.332, 0.3, 0.502, 0.58, 0.344, 0.268, 0.582, 0.326, 0.418, 0.642, 0.39, 0.378, 0.294, 0);  // growth strength
-            const float4x4       relR = float4x4(0.98, 0.59, 0.5, 0.93, 0.73, 0.88, 0.93, 0.61, 0.84, 0.7, 0.57, 0.73, 0.74, 0.87, 0.72, 1);  // relative kernel radius
-            const float4x4        src = float4x4(0, 0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 1, 1, 2, 2, 0);  // source channels
-            const float4x4        dist= float4x4(0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 2, 0, 2, 0, 1, 0);  // destination channels
+            const float4x4    betaLen = float4x4(1., 1., 2., 2., 1., 2., 1., 1., 1., 2., 2., 2., 1., 2., 1., 0);  // kernel ring number
+            const float4x4      beta0 = float4x4(1., 1., 1., 0., 1., 5./6., 1, 1, 1, 11./12., 3./4., 1, 1, 1./6., 1., 0.);  // kernel ring heights
+            const float4x4      beta1 = float4x4(0., 0., 1./4., 1., 0., 1., 0., 0., 0., 1., 1., 11./12., 0., 1., 0., 0.);
+            const float4x4      beta2 = float4x4(0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.);
+            const float4x4         mu = float4x4(0.242, 0.375, 0.194, 0.122, 0.413, 0.221, 0.192, 0.492, 0.426, 0.361, 0.464, 0.361, 0.235, 0.381, 0.216, 0.);  // growth center
+            const float4x4      sigma = float4x4(0.061, 0.1553, 0.0361, 0.0531, 0.0774, 0.0365, 0.0649, 0.1219, 0.1759, 0.1381, 0.1044, 0.0686, 0.0924, 0.1118, 0.0748, 1.);  // growth width
+            const float4x4        eta = float4x4(0.144, 0.506, 0.332, 0.3, 0.502, 0.58, 0.344, 0.268, 0.582, 0.326, 0.418, 0.642, 0.39, 0.378, 0.294, 0.);  // growth strength
+            const float4x4       relR = float4x4(0.98, 0.59, 0.5, 0.93, 0.73, 0.88, 0.93, 0.61, 0.84, 0.7, 0.57, 0.73, 0.74, 0.87, 0.72, 1.);  // relative kernel radius
+            const float4x4        src = float4x4(0., 0, 0, 1., 1., 1., 2., 2., 2., 0., 0., 1., 1., 2., 2., 0.);  // source channels
+            const float4x4        dist= float4x4(0., 0., 0., 1., 1., 1., 2., 2., 2., 1., 2., 0., 2., 0., 1., 0.);  // destination channels
             
             // precalculate
             static const int intR = int(ceil(R));
@@ -185,20 +185,20 @@ Shader "Unlit/Lenia2D"
 
                 // loop through the neighborhood, optimized: same weights for all quadrants/octants
                 // calculate the weighted average of neighborhood from source channel
-                float4x4 sum = 0, total = 0;
+                float4x4 sum = 0., total = 0.;
                 // self
                 float r = 0.;
                 float4x4 weight = getWeight(r, relR);
-                float4x4 valSrc = getVal(fragCoord + float2(0, 0)); sum += valSrc * weight; total += weight;
+                float4x4 valSrc = getVal(fragCoord + float2(0., 0.)); sum += valSrc * weight; total += weight;
                 // orthogonal
                 for (int x=1; x<=intR; x++)
                 {
                     r = float(x) / R;
                     weight = getWeight(r, relR);
-                    valSrc = getVal(fragCoord + float2(+x, 0) * samplingDist); sum += valSrc * weight; total += weight;
-                    valSrc = getVal(fragCoord + float2(-x, 0) * samplingDist); sum += valSrc * weight; total += weight;
-                    valSrc = getVal(fragCoord + float2(0, +x) * samplingDist); sum += valSrc * weight; total += weight;
-                    valSrc = getVal(fragCoord + float2(0, -x) * samplingDist); sum += valSrc * weight; total += weight;
+                    valSrc = getVal(fragCoord + float2(+x, 0.) * samplingDist); sum += valSrc * weight; total += weight;
+                    valSrc = getVal(fragCoord + float2(-x, 0.) * samplingDist); sum += valSrc * weight; total += weight;
+                    valSrc = getVal(fragCoord + float2(0., +x) * samplingDist); sum += valSrc * weight; total += weight;
+                    valSrc = getVal(fragCoord + float2(0., -x) * samplingDist); sum += valSrc * weight; total += weight;
                 }
                 // diagonal
                 for (int x=1; x<=intR; x++)
@@ -232,26 +232,26 @@ Shader "Unlit/Lenia2D"
                 float4x4 avg = sum / (total + EPSILON);    // avoid divided by zero
 
                 // calculate growth, add a small portion to destination channel
-                const float4x4 growth = eta * bell(avg, mu, sigma) * 2 - 1;
-                const float3 growthDst = float3( getDst(growth, 0), getDst(growth, 1), getDst(growth, 2));
+                const float4x4 growth = eta * bell(avg, mu, sigma) * 2. - 1.;
+                const float3 growthDst = float3( getDst(growth, 0.), getDst(growth, 1.), getDst(growth, 2.));
                 const float3 val = tex2D(_MainTex, uv);
-                float3 rgb = clamp(dt * growthDst + val, 0, 1);
+                float3 rgb = clamp(dt * growthDst + val, 0., 1.);
 
                 // debug: uncomment to show list of kernels
                 // rgb = drawKernel(fragCoord / iResolution.y);
 
                 // randomize at start, or add patch on mouse click
                 // if (iFrame == 0 || iMouse.z > 0.)
-                if (_Time.x == 0)
+                if (_Time.x == 0.)
                 {
-                    float x = noise(fragCoord/R/samplingDist + _Time.x % 1) * 100;
-                    float y = noise(fragCoord/R/samplingDist + sin(_Time.x) * 100);
-                    float z = noise(fragCoord/R/samplingDist + cos(_Time.x) * 100);
+                    float x = noise(fragCoord/R/samplingDist + _Time.x % 1.) * 100;
+                    float y = noise(fragCoord/R/samplingDist + _SinTime.x * 100);
+                    float z = noise(fragCoord/R/samplingDist + _CosTime.x * 100);
                     
                     rgb = baseNoise + float3(x,y,z);
                 }
 
-                return float4(rgb, 1);
+                return float4(rgb, 1.);
             }
             
             v2f vert (appdata v)

@@ -11,7 +11,7 @@ public class LeniaJsonToTexAsset : MonoBehaviour
     [Header("Run settings")] private bool _cancel;
     [SerializeField] private Texture3DSO _textureSO;
     [SerializeField] private string _path;
-    [SerializeField] private TextureSettings _settings;
+    //[SerializeField] private TextureSettings _settings;
     [Header("Result")] 
     [SerializeField] [ReadOnly] private Texture3D _texture;
     private EditorCoroutine _running;
@@ -22,7 +22,7 @@ public class LeniaJsonToTexAsset : MonoBehaviour
     {
         if (_running == null)
         {
-            _running = EditorCoroutineUtility.StartCoroutine(ProcessFile(), this);
+            //_running = EditorCoroutineUtility.StartCoroutine(ProcessFile(), this);
         }
         else
         {
@@ -37,6 +37,7 @@ public class LeniaJsonToTexAsset : MonoBehaviour
         _cancel = true;
     }
 
+    /*
     IEnumerator ProcessFile()
     {
         //Can be modified externally of this method to block the execution
@@ -45,27 +46,27 @@ public class LeniaJsonToTexAsset : MonoBehaviour
         _reader = new StreamReader(File.OpenRead(Path.Combine(parent.FullName, _path)));
         
         string line;
-        LeniaParser parser = new();
-        parser.Init(_settings);
+        //LeniaParser parser = new();
+        //parser.Init(_settings);
 
         int step = 0;
         while (_reader.Peek() >= 0 && !_cancel)
         {
             line = _reader.ReadLine();
-            parser.NewLine(line, out Texture3D texture);
-            if (texture)
+            //parser.NewLine(line, out Texture3D texture);
+            /*if (texture)
             {
                 _textureSO.Save(texture,
                     "Gen" + step.ToString() + "-Pix" + _settings.pixelSize + "-" + _settings.format.ToString());
                 step++;
                 _texture = texture;
                 yield return new WaitForEndOfFrame();
-            }
+            }#1#
         }
 
         Debug.LogWarning("Done");
         _reader.Close();
-    }
+    }*/
 
     private void OnDestroy()
     {
