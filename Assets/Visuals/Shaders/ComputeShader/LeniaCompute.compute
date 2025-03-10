@@ -1,0 +1,87 @@
+#pragma kernel CSMain
+
+RWTexture2D<float4> Result;
+
+float ResX;
+float ResY;
+float4 _Time;
+
+bool firstFrame = false;
+bool mouse = false;
+
+const float R = 15.;       // space resolution = kernel radius
+const float T = 10.;       // time resolution = number of divisions per unit time
+// const float dt = 1./T;     // time step
+const float mu = 0.14;     // growth center
+const float sigma = 0.014; // growth width
+const float rho = 0.5;     // kernel center
+const float omega = 0.15;  // kernel width
+
+float bell(float x, float m, float s)
+{
+    return exp(-(x-m)*(x-m)/s/s/2.f);  // bell-shaped curve
+}
+
+// Hash / noise functions
+float2 hash(float2 p)
+{
+    p = float2(dot(p,float2(127.1f,311.7f)), dot(p,float2(269.5f,183.3f)));
+    return -1.0f + 2.0f * frac(sin(p) * 43758.5453123f);
+}
+
+float noise(float2 p)
+{
+    const float k1 = 0.366025404f; // (sqrt(3)-1)/2;
+    const float k2 = 0.211324865f; // (3-sqrt(3))/6;
+
+    float2  i = floor(p + (p.x + p.y) * k1);
+    float2  a = p - i + (i.x + i.y) * k2;
+    float m = step(a.y, a.x);
+    const float2 o = float2(m, 1.0f - m);
+    const float2 b = a - o + k2;
+    const float2 c = a - 1.0f + 2.0f * k2;
+    const float3 h = max(0.5f - float3(dot(a,a), dot(b,b), dot(c,c) ), 0.0f);
+    const float3 n = h * h * h * h * float3(dot(a,hash(i + 0.0f)), dot(b,hash(i + o)), dot(c,hash(i + 1.0f)));
+    return dot(n, 70.0f);
+}
+
+// Kernel 0
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2(id.x / ResX, id.y / ResY); 
+
+    float sum = 0.f;
+    float total = 0.f;
+    for (int x = -int(R); x<=int(R); x++)
+        for (int y = -int(R); y <= int(R); y++)
+        {
+            float r = sqrt(float(x*x + y*y)) / R;
+            float2 txy = (float2(id.x, id.y) + float2(x,y)) / float2(ResX, ResY) % 1.;
+            float val = Result[txy].x;
+            float weight = bell(r, rho, omega);
+            sum += val * weight;
+            total += weight;
+        }
+    float avg = sum / total;
+
+    float val = Result[uv].x;
+    float growth = bell(avg, mu, sigma) * 2.f - 1.f;
+    float c = clamp(val + (1.f/T) * growth, 0.f, 1.f);
+
+    /*
+    if (_Time.y < 10.f || mouse)
+    {
+        c = 0.013f + noise(float2(id.x, id.y));
+    }
+
+    
+    if (mouse)
+    {
+        float d = length((fragCoord.xy - iMouse.xy) / iResolution.xx);
+        if (d <= R/iResolution.x) c = 0.02 + noise(fragCoord/R + mod(_Time.y,1.)*100.);
+    }
+    */
+    
+    Result[id.xy] = float4(c,c,c,1.f);
+}
