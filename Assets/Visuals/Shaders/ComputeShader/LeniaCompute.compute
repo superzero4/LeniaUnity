@@ -49,6 +49,7 @@ float noise(float2 p)
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
+    /*
     float2 uv = float2(id.x / ResX, id.y / ResY); 
 
     float sum = 0.f;
@@ -83,5 +84,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     }
     */
     
-    Result[id.xy] = float4(c,c,c,1.f);
+    //Result[id.xy] = float4(c,c,c,1.f);
+    Result[id.xy] = float4(Result[id.xy].r,Result[id.xy].g,Result[id.xy].b,1.f);
 }

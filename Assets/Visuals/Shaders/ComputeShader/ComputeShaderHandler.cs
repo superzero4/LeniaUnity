@@ -30,7 +30,7 @@ public class ComputeShaderHandler : MonoBehaviour
         _noiseCompute.SetTexture(0, NoiseResult, _renderTexture);
         _noiseCompute.Dispatch(0, _renderTexture.width / 8, _renderTexture.height / 8, 1);
 
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(.5f);
         
         // Ensuite, Lenia
         _computeShader.SetTexture(0, Result, _renderTexture);
@@ -39,9 +39,6 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetVector(Time, Shader.GetGlobalVector (Time));
         
         _computeShader.Dispatch(0, _renderTexture.width / 8, _renderTexture.height / 8, 1);
-
-        yield return new WaitForSeconds(0.5f);
-        
     }
 
     private void Update()
