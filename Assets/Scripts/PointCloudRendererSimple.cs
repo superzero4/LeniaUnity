@@ -16,12 +16,12 @@ public class PointCloudRendererSimple : MonoBehaviour
     void Start()
     {
         pointMaterial = new Material(pointShader);
-        SetTexture();
+        SendToShader();
 
         // Create the material
     }
 
-    private void SetTexture()
+    private void SendToShader()
     {
         // Get the pixel array from the texture
         Color[] pixelArray = texture.GetPixels();
@@ -84,7 +84,6 @@ public class PointCloudRendererSimple : MonoBehaviour
     public void SetTexture(Texture3D texture3D)
     {
         texture = texture3D;
-        SetTexture();
-        UpdateView();
+        SendToShader();
     }
 }
