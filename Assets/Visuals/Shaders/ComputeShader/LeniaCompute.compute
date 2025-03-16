@@ -1,7 +1,5 @@
 #pragma kernel CSMain
 
-Texture2D _Input;
-SamplerState sampler_Input; // "sampler" + “_MainTex”
 RWTexture2D<float4> _Output;
 
 int ResX;
@@ -18,7 +16,7 @@ float bell(float x, float m, float s)
 
 float ReadInput(uint2 txy)
 {
-    return _Input[txy].r;
+    return _Output[txy].r;
     //With interpolation handled by the sampler, would support values that doesn't not represent preicely a pixel
     //return sampler_Input.SampleLevel(sampler_Input, float2(txy.x, txy.y) / float2(ResX, ResY), 0).r;
 }

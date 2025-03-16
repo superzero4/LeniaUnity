@@ -46,7 +46,6 @@ public class ComputeShaderHandler : MonoBehaviour
 
         //tex = _baseTexture;
         
-        _computeShader.SetTexture(0, Input, tex);
         _computeShader.SetTexture(0, Output, _renderTexture);
         _computeShader.SetInt(ResX, _renderTexture.width);
         _computeShader.SetInt(ResY, _renderTexture.height);
@@ -57,7 +56,6 @@ public class ComputeShaderHandler : MonoBehaviour
         
         while (true)
         {
-            _computeShader.SetTexture(0, Input, tex);
             _computeShader.SetTexture(0, Output, _renderTexture);
             
             _computeShader.Dispatch(0, _renderTexture.width / 8, _renderTexture.height / 8, 1);
