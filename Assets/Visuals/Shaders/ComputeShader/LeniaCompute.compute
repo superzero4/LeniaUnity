@@ -1,6 +1,8 @@
 #pragma kernel CSMain
 
-RWTexture2D<float4> Result;
+Texture2D _Input;
+SamplerState sampler_Input; // "sampler" + “_MainTex”
+RWTexture2D<float4> _Output;
 
 int ResX;
 int ResY;
@@ -18,6 +20,8 @@ float bell(float x, float m, float s)
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
+    float2 uv = float2(float(id.x) / float(ResX), float(id.y) / float(ResY));
+    
     float sum = 0.0f;
     float total = 0.0f;
 
@@ -35,7 +39,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         {
             float r = sqrt(float(x*x + y*y)) / R;
             uint2 txy = uint2(id.x + x, id.y + y) / uint2(ResX, ResY);
-            float val2 = Result[txy].r;
+            float val2 = _Input[txy].r;
             float weight = bell(r, rho, omega);
             // Result[id.xy] = float4(txy.x, txy.y, 1.0f, 1.0f);
             sum += val2 * weight;
@@ -43,16 +47,13 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         }
     }
     
-    float avg = sum / total;
-
-    Texture2D<float4> myTexture;
-    
-    float val = Result[id.xy].r;
+    float avg = sum / total;    
+    float val = _Input.SampleLevel(sampler_Input, uv, 0); 
     float growth = bell(avg, mu, sigma) * 2.0f - 1.0f;
     float c = val + dt * growth;
-
-    // Result[id.xy] = float4(c + 0.5f,c+ 0.5f,c+ 0.5f,1.0f);
-    Result[id.xy] = c;
+    
+    _Output[id.xy] = float4(val,val,val,1);
+    //_Output[id.xy] = float4(uv.x, uv.y, 0, 1);
     
     /*
     if (_Time.y < 10.f || mouse)
@@ -66,6 +67,4 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         float d = length((fragCoord.xy - iMouse.xy) / iResolution.xx);
         if (d <= R/iResolution.x) c = 0.02 + noise(fragCoord/R + mod(_Time.y,1.)*100.);
     }*/
-    
-    // Result[id.xy] = float4(c,c,c,1.0f);
 }
