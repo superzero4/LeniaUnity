@@ -1,8 +1,11 @@
 using System.Collections;
+using NaughtyAttributes;
+using Unity.EditorCoroutines.Editor;
 using UnityEngine;
 
 public class ComputeShaderHandler : MonoBehaviour
 {
+    [SerializeField,Range(0.000001f,2f)] private float _delay = .1f;
     [SerializeField] private ComputeShader _computeShader;
     [SerializeField] private ComputeShader _noiseCompute;
     [SerializeField] private RenderTexture _renderTexture;
@@ -16,7 +19,7 @@ public class ComputeShaderHandler : MonoBehaviour
     private static readonly int Time = Shader.PropertyToID("_Time");
     private static readonly int Mouse = Shader.PropertyToID("mouse");
 
-    IEnumerator Start()
+    private IEnumerator Routine()
     {
         if (_renderTexture == null)
         {
@@ -41,7 +44,7 @@ public class ComputeShaderHandler : MonoBehaviour
         tex.ReadPixels(new Rect(0, 0, _renderTexture.width, _renderTexture.height), 0, 0);
         tex.Apply();
 
-        tex = _baseTexture;
+        //tex = _baseTexture;
         
         _computeShader.SetTexture(0, Input, tex);
         _computeShader.SetTexture(0, Output, _renderTexture);
@@ -68,6 +71,26 @@ public class ComputeShaderHandler : MonoBehaviour
             // _computeShader.SetTexture(0, Output, _renderTexture);
             yield return new WaitForSeconds(1f);
         }
+    }
+
+    EditorCoroutine _routine;
+    [Button]
+    public void Run()
+    {
+        Debug.ClearDeveloperConsole();
+        Stop();
+        _routine = EditorCoroutineUtility.StartCoroutineOwnerless(Routine());
+    }
+    [Button]
+    private void Stop()
+    {
+        if(_routine != null)
+            EditorCoroutineUtility.StopCoroutine(_routine);
+    }
+
+    void Start()
+    {
+        Run();
     }
     
     /*
