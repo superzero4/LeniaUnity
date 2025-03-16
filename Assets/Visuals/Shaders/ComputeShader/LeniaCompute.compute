@@ -16,6 +16,13 @@ float bell(float x, float m, float s)
     return exp(-((x-m)*(x-m))/(s*s*2.0f));  // bell-shaped curve
 }
 
+float ReadInput(uint2 txy)
+{
+    return _Input[txy].r;
+    //With interpolation handled by the sampler, would support values that doesn't not represent preicely a pixel
+    //return sampler_Input.SampleLevel(sampler_Input, float2(txy.x, txy.y) / float2(ResX, ResY), 0).r;
+}
+
 // Kernel 0
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -38,8 +45,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         for (int y = -int(R); y <= int(R); y++)
         {
             float r = sqrt(float(x*x + y*y)) / R;
-            uint2 txy = uint2(id.x + x, id.y + y) / uint2(ResX, ResY);
-            float val2 = _Input[txy].r;
+            uint2 txy = uint2(id.x + x, id.y + y);
+            float val2 = ReadInput(txy);
             float weight = bell(r, rho, omega);
             // Result[id.xy] = float4(txy.x, txy.y, 1.0f, 1.0f);
             sum += val2 * weight;
@@ -48,11 +55,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     }
     
     float avg = sum / total;    
-    float val = _Input.SampleLevel(sampler_Input, uv, 0); 
+    float val =  ReadInput(id);
     float growth = bell(avg, mu, sigma) * 2.0f - 1.0f;
     float c = val + dt * growth;
-    
-    _Output[id.xy] = float4(val,val,val,1);
     //_Output[id.xy] = float4(uv.x, uv.y, 0, 1);
     
     /*
