@@ -35,16 +35,24 @@ Shader "PointCloud/PointCloudSimple"
                 float pointSize : PSIZE;
             };
 
-            StructuredBuffer<float4> _PointBuffer;
+            StructuredBuffer<float> _PointBuffer;
             float4x4 _Transform;
             float4 _Tint;
             float _PointSize;
+            uint _Width;
+            uint _Height;
+            uint _Depth;
+            float _Size;
 
             v2f vert(appdata v)
             {
                 v2f o;
-                float4 p = _PointBuffer[v.vertexID];
-                float3 position = p.xyz;
+                float life = _PointBuffer[v.vertexID];
+                float3 position = float3(
+                    (v.vertexID % _Width) * _Size / float(_Width),
+                    (v.vertexID / _Width % _Height) * _Size / float(_Height),
+                    (v.vertexID / (_Width * _Height)) * _Size / float(_Depth)
+                );
                 o.pos =
                     UnityObjectToClipPos(
                         float4(position, 1.0)
@@ -55,8 +63,6 @@ Shader "PointCloud/PointCloudSimple"
                 
                 o.pointSize = _PointSize;
 
-                
-                float life = p.w;
                 float4 color;
                 float fadedThreshold = 0.05;
                 float4 dead = float4(0, 0, 1, 1); // Blue
