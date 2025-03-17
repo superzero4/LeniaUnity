@@ -177,7 +177,8 @@ MonoBehaviour:
   pointShader: {fileID: 4800000, guid: b38cbcc5aed05724da23ee792dc5265c, type: 3}
   texture: {fileID: 11700000, guid: 7e653086ddea12f449db7cca92b9126e, type: 2}
   pointTint: {r: 1, g: 1, b: 1, a: 1}
-  pointSize: 0.5
+  pointSize: 0.03
+  _sizeMultiplier: 10
 --- !u!114 &212265865
 MonoBehaviour:
   m_ObjectHideFlags: 0
