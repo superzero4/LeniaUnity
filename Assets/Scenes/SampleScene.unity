@@ -131,13 +131,14 @@ GameObject:
   - component: {fileID: 212265862}
   - component: {fileID: 212265864}
   - component: {fileID: 212265865}
+  - component: {fileID: 212265866}
   m_Layer: 0
   m_Name: Cube_V3 (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!33 &212265862
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -173,8 +174,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1a440b36d39546498f35e9ca768da44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  texture: {fileID: 11700000, guid: 7e653086ddea12f449db7cca92b9126e, type: 2}
   pointShader: {fileID: 4800000, guid: b38cbcc5aed05724da23ee792dc5265c, type: 3}
+  texture: {fileID: 11700000, guid: 7e653086ddea12f449db7cca92b9126e, type: 2}
   pointTint: {r: 1, g: 1, b: 1, a: 1}
   pointSize: 0.5
 --- !u!114 &212265865
@@ -184,7 +185,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 212265859}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9de60ebc17ef49fba836a08798b57c08, type: 3}
   m_Name: 
@@ -252,6 +253,20 @@ MonoBehaviour:
   - {fileID: 11700000, guid: ffa78cb029b3089439f862d6ee183a10, type: 2}
   _delay: 0.001
   _texturePath: Assets/Visuals/Textures
+  _pcs: {fileID: 212265864}
+--- !u!114 &212265866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 212265859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96f13bc3ed894ec9ac631c78bc2573c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _compute: {fileID: 1775434346}
   _pcs: {fileID: 212265864}
 --- !u!1 &705507993
 GameObject:
@@ -454,6 +469,7 @@ GameObject:
   - component: {fileID: 1775434346}
   - component: {fileID: 1775434344}
   - component: {fileID: 1775434343}
+  - component: {fileID: 1775434347}
   m_Layer: 0
   m_Name: RenderTexture
   m_TagString: Untagged
@@ -541,10 +557,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66001ded1739520409c0f76d348cad45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _radius: 15
+  _delay: 0.1
+  _size: {x: 256, y: 256, z: 1}
   _computeShader: {fileID: 7200000, guid: 16d4536dff63e794cad87eb69eb8e3d7, type: 3}
-  _noiseCompute: {fileID: 7200000, guid: c2bd937d19192b64c8961507792076c0, type: 3}
-  _renderTexture: {fileID: 8400000, guid: 464e2f57840f3994d9a31fd033719206, type: 2}
   _baseTexture: {fileID: 2800000, guid: 7f6c44960eaedc8448cbd21a345d8f50, type: 3}
+--- !u!114 &1775434347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1775434341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c1feb52ce7c492d8c9460ef8d7e9f34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _compute: {fileID: 1775434346}
+  _material: {fileID: 2100000, guid: 53bfc120bf38d644998f6877f9505a15, type: 2}
+  _filterMode: 1
 --- !u!1 &2073033185
 GameObject:
   m_ObjectHideFlags: 0
@@ -570,7 +602,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2073033185}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f0e0c06a0c960104dbd9eda4ca02ef66, type: 3}
   m_Name: 
@@ -600,7 +632,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2073033185}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 49dcfdde7713424a8b23532e8c33f2f6, type: 3}
   m_Name: 
