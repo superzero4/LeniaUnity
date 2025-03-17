@@ -5,6 +5,7 @@ RWTexture2D<float4> _Output;
 
 int ResX;
 int ResY;
+float _Radius; // space resolution = kernel radius
 float4 _Time;
 
 bool firstFrame = false;
@@ -31,7 +32,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float sum = 0.0f;
     float total = 0.0f;
 
-    const float R = 15.0f;      // space resolution = kernel radius
     const float T = 10.0f;      // time resolution = number of divisions per unit time
     const float dt = 1.0f/T;    // time step
     const float mu = 0.14f;     // growth center
@@ -39,16 +39,16 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     const float rho = 0.5f;     // kernel center
     const float omega = 0.15f;  // kernel width
     
-    for (int x = -int(R); x <= int(R); x++)
+
+    for (int x = -int(_Radius); x <= int(_Radius); x++)
     {
-        for (int y = -int(R); y <= int(R); y++)
+        for (int y = -int(_Radius); y <= int(_Radius); y++)
         {
-            float r = sqrt(float(x*x + y*y)) / R;
+            float r = sqrt(float(x * x + y * y)) / _Radius;
             uint2 txy = uint2(id.x + x, id.y + y);
-            float val2 = ReadInput(txy);
+            float neighbourValue = ReadInput(txy);
             float weight = bell(r, rho, omega);
-            // Result[id.xy] = float4(txy.x, txy.y, 1.0f, 1.0f);
-            sum += val2 * weight;
+            sum += neighbourValue * weight;
             total += weight;
         }
     }
