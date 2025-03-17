@@ -1,88 +1,93 @@
 using System.Collections;
 using NaughtyAttributes;
+using NaughtyAttributes.Test;
 using Unity.EditorCoroutines.Editor;
 using UnityEngine;
 
 public class ComputeShaderHandler : MonoBehaviour
 {
-    [SerializeField,Range(0.000001f,2f)] private float _delay = .1f;
-    [SerializeField] private ComputeShader _computeShader;
-    [SerializeField] private ComputeShader _noiseCompute;
-    [SerializeField] private RenderTexture _renderTexture;
+    [Header("Settings")] [SerializeField, Range(1, 50f)]
+    private float _radius = 15f;
+    [SerializeField, Range(0.000001f, 5f)]
+    private float _delay = .1f;
+
+    [SerializeField] private Vector3Int _size;
+
+    [Header("References")] [SerializeField]
+    private ComputeShader _computeShader;
+
     [SerializeField] private Texture2D _baseTexture;
-    
-    private static readonly int Input = Shader.PropertyToID("_Input");
-    private static readonly int Output = Shader.PropertyToID("_Output");
-    private static readonly int NoiseResult = Shader.PropertyToID("NoiseResult");
+
+    private ComputeBuffer _buffer;
+
+    private static readonly int BufferId = Shader.PropertyToID("_buffer");
+    private static readonly int Radius = Shader.PropertyToID("_Radius");
     private static readonly int ResX = Shader.PropertyToID("ResX");
     private static readonly int ResY = Shader.PropertyToID("ResY");
     private static readonly int Time = Shader.PropertyToID("_Time");
     private static readonly int Mouse = Shader.PropertyToID("mouse");
+    private const int LeniaKernel = 0;
+    private const int NoiseKernel = 1;
+
+    public ComputeBuffer Buffer => _buffer;
+
+    public Vector3Int Size => _size;
+
+    private void Dispatch(int kernelIndex)
+    {
+        int x = Mathf.Max(1, _size.x / 8);
+        int y = Mathf.Max(1, _size.y / 8);
+        int z = Mathf.Max(1, _size.z / 8);
+        _computeShader.Dispatch(kernelIndex, x, y, z);
+    }
 
     private IEnumerator Routine()
     {
-        if (_renderTexture == null)
-        {
-            _renderTexture = new RenderTexture(256, 256, 1)
-            {
-                enableRandomWrite = true,
-                name = "Result"
-            };
-            _renderTexture.Create();
-        }
-        
+        if (_buffer != null)
+            _buffer.Release();
+        _buffer = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
+
+        _computeShader.SetBuffer(NoiseKernel, BufferId, _buffer);
+        _computeShader.SetBuffer(LeniaKernel, BufferId, _buffer);
+        _computeShader.SetInt(ResX, _size.x);
+        _computeShader.SetInt(ResY, _size.y);
+        _computeShader.SetFloat(Radius, _radius);
         // Première étape: noise
-        _noiseCompute.SetTexture(0, NoiseResult, _renderTexture);
-        _noiseCompute.Dispatch(0, _renderTexture.width / 8, _renderTexture.height / 8, 1);
+        Dispatch(NoiseKernel);
 
-        yield return new WaitForSeconds(.5f);
-        
+        yield return new WaitForSeconds(_delay / 2f);
+
         // Ensuite, Lenia
-        
-        Texture2D tex = new Texture2D(_renderTexture.width, _renderTexture.height, TextureFormat.RGBAFloat, false);
-        RenderTexture.active = _renderTexture;
-        tex.ReadPixels(new Rect(0, 0, _renderTexture.width, _renderTexture.height), 0, 0);
-        tex.Apply();
 
-        //tex = _baseTexture;
-        
-        _computeShader.SetTexture(0, Output, _renderTexture);
-        _computeShader.SetInt(ResX, _renderTexture.width);
-        _computeShader.SetInt(ResY, _renderTexture.height);
         // _computeShader.SetFloat("R", 15.0f);
-        _computeShader.SetVector(Time, Shader.GetGlobalVector (Time));
-        
-        yield return new WaitForSeconds(1f);
-        
+        _computeShader.SetVector(Time, Shader.GetGlobalVector(Time));
+
+        yield return new WaitForSeconds(_delay);
+        //yield break;
         while (true)
         {
-            _computeShader.SetTexture(0, Output, _renderTexture);
-            
-            _computeShader.Dispatch(0, _renderTexture.width / 8, _renderTexture.height / 8, 1);
-            
-            yield return new WaitForSeconds(1f);
-            
-            RenderTexture.active = _renderTexture;
-            tex.ReadPixels(new Rect(0, 0, _renderTexture.width, _renderTexture.height), 0, 0);
-            tex.Apply();
-            
-            // _computeShader.SetTexture(0, Output, _renderTexture);
-            yield return new WaitForSeconds(1f);
+            Dispatch(LeniaKernel);
+            yield return new WaitForSeconds(_delay);
         }
     }
 
     EditorCoroutine _routine;
+
     [Button]
     public void Run()
     {
         Debug.ClearDeveloperConsole();
         Stop();
-        _routine = EditorCoroutineUtility.StartCoroutineOwnerless(Routine());
+        if (Application.isPlaying)
+            StartCoroutine(Routine());
+        else
+            _routine = EditorCoroutineUtility.StartCoroutineOwnerless(Routine());
     }
+
     [Button]
     private void Stop()
     {
-        if(_routine != null)
+        if (_routine != null)
             EditorCoroutineUtility.StopCoroutine(_routine);
     }
 
@@ -90,12 +95,12 @@ public class ComputeShaderHandler : MonoBehaviour
     {
         Run();
     }
-    
+
     /*
     private void LeniaCPU(RenderTexture rt)
     {
         RenderTexture.active = rt;
-        
+
         const int R = 15;       // space resolution = kernel radius
         const float T = 10.0f;       // time resolution = number of divisions per unit time
         const float dt = 1.0f/T;  // time step
@@ -108,15 +113,15 @@ public class ComputeShaderHandler : MonoBehaviour
         {
             for (int y = 0; y < rt.height; y++)
             {
-            
+
             }
         }
 
-        Vector2 uv = new Vector2(id.x / ResX, id.y / ResY); 
+        Vector2 uv = new Vector2(id.x / ResX, id.y / ResY);
 
         float sum = 0.0f;
         float total = 0.0f;
-    
+
         for (int x = -R; x<= R; x++)
         {
             for (int y = -R; y <= R; y++)
@@ -129,7 +134,7 @@ public class ComputeShaderHandler : MonoBehaviour
                 total += weight;
             }
         }
-    
+
         float avg = sum / total;
         float val = Result[uv];
         float growth = bell(avg, mu, sigma) * 2.0f - 1.0f;
@@ -147,14 +152,13 @@ public class ComputeShaderHandler : MonoBehaviour
             float d = length((fragCoord.xy - iMouse.xy) / iResolution.xx);
             if (d <= R/iResolution.x) c = 0.02 + noise(fragCoord/R + mod(_Time.y,1.)*100.);
         }
-    
+
         Result[id.xy] = c * 100;
-        
+
         float Bell(float x, float m, float s)
         {
             return Mathf.Exp(-(x - m) * (x - m) / s / s / 2.0f);
         }
     }
     */
-    
 }
