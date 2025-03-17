@@ -32,13 +32,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float sum = 0.0f;
     float total = 0.0f;
 
-    const float T = 10.0f;      // time resolution = number of divisions per unit time
-    const float dt = 1.0f/T;    // time step
-    const float mu = 0.14f;     // growth center
+    const float dt = 1.0f/10.0f; // time step
+    const float mu = 0.14f; // growth center
     const float sigma = 0.014f; // growth width
-    const float rho = 0.5f;     // kernel center
-    const float omega = 0.15f;  // kernel width
-    
+    const float rho = 0.5f; // kernel center
+    const float omega = 0.15f; // kernel width
 
     for (int x = -int(_Radius); x <= int(_Radius); x++)
     {
