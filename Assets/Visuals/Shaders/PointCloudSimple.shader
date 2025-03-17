@@ -78,12 +78,11 @@ Shader "PointCloud/PointCloudSimple"
                 {
                     color = lerp(mid, full, (life - 0.5) * 2.0);
                 }
-                //TODO fade alpha based on how close to camera, so we can be indide the thing without thig sticked to the camera
-                if (life <= fadedThreshold)
-                {
-                    //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
-                    color.a = (life / fadedThreshold)*dead.a;
-                }
+                //if (life <= fadedThreshold)
+                //{
+                //    //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
+                //    color.a = (life / fadedThreshold)*dead.a;
+                //}
                 
                 o.color = color * _Tint;
                 return o;
