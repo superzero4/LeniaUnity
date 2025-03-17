@@ -1,8 +1,9 @@
 #pragma kernel CSMain
 #pragma kernel NoiseMain
 
-RWTexture2D<float4> _Output;
+RWStructuredBuffer<float> _buffer;
 
+// #region Common
 int ResX;
 int ResY;
 float _Radius; // space resolution = kernel radius
@@ -11,24 +12,33 @@ float4 _Time;
 bool firstFrame = false;
 bool mouse = false;
 
-float bell(float x, float m, float s)
+int Index(uint2 id)
 {
-    return exp(-((x-m)*(x-m))/(s*s*2.0f));  // bell-shaped curve
+    //For now we only suppoer xy
+    return id.y * ResX + id.x;
 }
 
+// #endregion
+// #region Input
 float ReadInput(uint2 txy)
 {
-    return _Output[txy].r;
+    return _buffer[Index(txy)];
     //With interpolation handled by the sampler, would support values that doesn't not represent preicely a pixel
     //return sampler_Input.SampleLevel(sampler_Input, float2(txy.x, txy.y) / float2(ResX, ResY), 0).r;
 }
 
+float bell(float x, float m, float s)
+{
+    //exp(-(x-m)^2/(2s^2))
+    return exp(-((x - m) * (x - m)) / (s * s * 2.f)); // bell-shaped curve
+}
+
 // Kernel 0
 [numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CSMain(uint3 id : SV_DispatchThreadID)
 {
     float2 uv = float2(float(id.x) / float(ResX), float(id.y) / float(ResY));
-    
+
     float sum = 0.0f;
     float total = 0.0f;
 
@@ -50,15 +60,16 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             total += weight;
         }
     }
-    
-    float avg = sum / total;    
-    float val =  ReadInput(id);
+
+    float avg = sum / total;
+    float val = ReadInput(id);
     float growth = bell(avg, mu, sigma) * 2.0f - 1.0f;
-    float c = val + dt * growth;
-    float final = c;
-    _Output[id.xy] = float4(final,final,final,1);
+    float color = clamp(val + dt * growth, 0.f, 1.f);
+    //avg =  .10f;
+    //Debugging index of the buffer : float displayedValue = float(Index(id))/float(ResX*ResY*2);
+    _buffer[Index(id)] = color;
     //_Output[id.xy] = float4(uv.x, uv.y, 0, 1);
-    
+
     /*
     if (_Time.y < 10.f || mouse)
     {
@@ -71,7 +82,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         float d = length((fragCoord.xy - iMouse.xy) / iResolution.xx);
         if (d <= R/iResolution.x) c = 0.02 + noise(fragCoord/R + mod(_Time.y,1.)*100.);
     }*/
-}}
+}
 
 // #endregion
 
