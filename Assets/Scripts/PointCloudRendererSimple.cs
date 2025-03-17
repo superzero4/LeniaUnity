@@ -7,7 +7,8 @@ public class PointCloudRendererSimple : MonoBehaviour
     [SerializeField] private Shader pointShader;
     [SerializeField] private Texture3D texture;
     [SerializeField] private Color pointTint = Color.white;
-    [SerializeField, Range(0, 10f)] public float pointSize = 0.05f;
+    [SerializeField, Range(0.00001f, 10f)] public float pointSize = 0.05f;
+    [SerializeField, Range(0.0001f, 20f)] private float _sizeMultiplier = 1f;
 
     private Material pointMaterial;
     private ComputeBuffer pointBuffer;
@@ -49,7 +50,7 @@ public class PointCloudRendererSimple : MonoBehaviour
 
         // Set the data of the ComputeBuffer using the pixel array
         pointBuffer.SetData(pointDataArray);
-        UpdateView();
+        UpdateView(texture.width, texture.height, texture.depth);
     }
 
 
@@ -61,14 +62,18 @@ public class PointCloudRendererSimple : MonoBehaviour
         pointMaterial.SetColor("_Tint", pointTint);
         pointMaterial.SetFloat("_PointSize", pointSize);
         pointMaterial.SetMatrix("_Transform", transform.worldToLocalMatrix);
+        pointMaterial.SetFloat("_Size", _sizeMultiplier);
 
         pointMaterial.SetPass(0);
         //Draw the points
         Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count);
     }
 
-    private void UpdateView()
+    private void UpdateView(int width, int height, int depth)
     {
+        pointMaterial.SetInt("_Width", width);
+        pointMaterial.SetInt("_Height", height);
+        pointMaterial.SetInt("_Depth", depth);
         pointMaterial.SetBuffer("_PointBuffer", pointBuffer);
     }
 
@@ -85,13 +90,13 @@ public class PointCloudRendererSimple : MonoBehaviour
     {
         texture = texture3D;
         SetTexture();
-        UpdateView();
+        UpdateView(texture.width, texture.height, texture.depth);
     }
 
-    public void SetBuffer(ComputeBuffer buff)
+    public void SetBuffer(ComputeBuffer buff, Vector3Int size)
     {
         pointMaterial = new Material(pointShader);
         pointBuffer = buff;
-        UpdateView();
+        UpdateView(size.x, size.y, size.z);
     }
 }
