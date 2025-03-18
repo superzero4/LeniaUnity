@@ -174,10 +174,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1a440b36d39546498f35e9ca768da44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pointShader: {fileID: 4800000, guid: b38cbcc5aed05724da23ee792dc5265c, type: 3}
   texture: {fileID: 11700000, guid: 7e653086ddea12f449db7cca92b9126e, type: 2}
+  pointShader: {fileID: 4800000, guid: b38cbcc5aed05724da23ee792dc5265c, type: 3}
   pointTint: {r: 1, g: 1, b: 1, a: 1}
-  pointSize: 0.03
+  pointSize: 0.1
   _sizeMultiplier: 10
 --- !u!114 &212265865
 MonoBehaviour:
@@ -559,8 +559,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _radius: 15
-  _delay: 0.1
-  _size: {x: 256, y: 256, z: 1}
+  _delayGenerations: 0.1
+  _delayNoise: 2
+  _size: {x: 64, y: 64, z: 64}
   _computeShader: {fileID: 7200000, guid: 16d4536dff63e794cad87eb69eb8e3d7, type: 3}
   _baseTexture: {fileID: 2800000, guid: 7f6c44960eaedc8448cbd21a345d8f50, type: 3}
 --- !u!114 &1775434347
@@ -575,6 +576,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c1feb52ce7c492d8c9460ef8d7e9f34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _displayedSlice: 0
   _compute: {fileID: 1775434346}
   _material: {fileID: 2100000, guid: 53bfc120bf38d644998f6877f9505a15, type: 2}
   _filterMode: 1
@@ -638,18 +640,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49dcfdde7713424a8b23532e8c33f2f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _pythonInterpreter: python
   folder: External/Lenia/Python
   _filename: testPython
   _args: []
   _process:
     rid: 3635390626489172296
-  _output:
-    rid: -2
   references:
     version: 2
     RefIds:
-    - rid: -2
-      type: {class: , ns: , asm: }
     - rid: 3635390626489172296
       type: {class: Process, ns: System.Diagnostics, asm: System}
       data: 
