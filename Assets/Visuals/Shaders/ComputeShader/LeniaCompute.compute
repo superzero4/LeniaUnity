@@ -34,6 +34,16 @@ float bell(float x, float m, float s)
     return exp(-((x - m) * (x - m)) / (s * s * 2.f)); // bell-shaped curve
 }
 
+float quad(float r)
+{
+    return pow(4 * r * (1 - r), 4);
+}
+
+float quadGrowth(float n, float m, float s)
+{
+    return pow(max(0, 1 - pow(n - m, 2) / (9 * s * s)), 4);
+}
+
 // Kernel 0
 [numthreads(8,8,1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
@@ -58,6 +68,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
                 uint3 txyz = uint3(id.x + x, id.y + y, id.z + z);
                 float neighbourValue = ReadInput(txyz);
                 float weight = bell(r, rho, omega);
+                weight = quad(r); //Used in original python lenia for 3D instead of bell for kenel
                 sum += neighbourValue * weight;
                 total += weight;
             }
@@ -66,7 +77,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     float avg = sum / total;
     float val = ReadInput(id);
-    float growth = bell(avg, mu, sigma) * 2.0f - 1.0f;
+    float growth = quadGrowth(avg, mu, sigma) * 2.0f - 1.0f;
     float color = clamp(val + dt * growth, 0.f, 1.f);
     //avg =  .10f;
     //Debugging index of the buffer : float displayedValue = float(Index(id))/float(ResX*ResY*2);
