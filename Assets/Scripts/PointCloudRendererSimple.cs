@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class PointCloudRendererSimple : MonoBehaviour
 {
-    [SerializeField] private Shader pointShader;
     [SerializeField] private Texture3D texture;
+    [SerializeField] private Shader pointShader;
     [SerializeField] private Color pointTint = Color.white;
     [SerializeField, Range(0.00001f, 10f)] public float pointSize = 0.05f;
     [SerializeField, Range(0.0001f, 20f)] private float _sizeMultiplier = 1f;
@@ -17,12 +17,12 @@ public class PointCloudRendererSimple : MonoBehaviour
     void Start()
     {
         pointMaterial = new Material(pointShader);
-        SetTexture();
+        SendToShader();
 
         // Create the material
     }
 
-    private void SetTexture()
+    private void SendToShader()
     {
         // Get the pixel array from the texture
         Color[] pixelArray = texture.GetPixels();
@@ -89,7 +89,6 @@ public class PointCloudRendererSimple : MonoBehaviour
     public void SetTexture(Texture3D texture3D)
     {
         texture = texture3D;
-        SetTexture();
         UpdateView(texture.width, texture.height, texture.depth);
     }
 
