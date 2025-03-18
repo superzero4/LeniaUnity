@@ -45,7 +45,7 @@ float quadGrowth(float n, float m, float s)
 }
 
 // Kernel 0
-[numthreads(8,8,1)]
+[numthreads(8,8,8)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
     float sum = 0.0f;
@@ -126,7 +126,7 @@ float noise(float2 p)
     return dot(n, 70.0f);
 }
 
-[numthreads(8,8,1)]
+[numthreads(8,8,8)]
 void NoiseMain(uint3 id : SV_DispatchThreadID)
 {
     float x = float(id.x) / _Radius;

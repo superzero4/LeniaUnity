@@ -36,9 +36,10 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private void Dispatch(int kernelIndex)
     {
-        int x = Mathf.Max(1, _size.x / 8);
-        int y = Mathf.Max(1, _size.y / 8);
-        int z = Mathf.Max(1, _size.z / 8);
+        int factor = 8;//Should be equal, for each dimension, to the numThreads values in the shader
+        int x = Mathf.Max(1, _size.x / factor);
+        int y = Mathf.Max(1, _size.y / factor);
+        int z = Mathf.Max(1, _size.z / factor);
         _computeShader.Dispatch(kernelIndex, x, y, z);
     }
 
