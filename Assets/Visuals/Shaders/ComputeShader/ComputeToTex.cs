@@ -1,10 +1,15 @@
-﻿using NaughtyAttributes;
+﻿using System.Collections;
+using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Visuals.Shaders.ComputeShader
 {
     public class ComputeToTex : MonoBehaviour
     {
+        [FormerlySerializedAs("_displayedDepth")] [SerializeField, Range(0, 1024)]
+        private int _displayedSlice = 0;
+
         [SerializeField] private ComputeShaderHandler _compute;
         [SerializeField] private Material _material;
         [SerializeField] private FilterMode _filterMode;
@@ -22,16 +27,32 @@ namespace Visuals.Shaders.ComputeShader
                 _texture.wrapMode = TextureWrapMode.Clamp;
                 _texture.filterMode = _filterMode;
             }
-            float[] data = new float[_compute.Size.x * _compute.Size.y * _compute.Size.z];
-            _compute.Buffer.GetData(data);
+
+            //We want only a slice of the 3D data
+            int sliceSize = _compute.Size.x * _compute.Size.y;
+            float[] data = new float[sliceSize];
+            _compute.Buffer.GetData(data, 0, (_displayedSlice % _compute.Size.z) * sliceSize, sliceSize);
             _texture.SetPixelData(data, 0);
             _texture.Apply();
             _material.SetTexture("_MainTex", _texture);
         }
 
-        private void Update()
+        [Button]
+        public void Increment()
         {
+            _displayedSlice++;
             UpdateTexture();
+        }
+
+        private IEnumerator Start()
+        {
+            yield return new WaitUntil(() => _compute.Buffer != null);
+            yield return new WaitForEndOfFrame();
+            while (true)
+            {
+                Increment();
+                yield return new WaitForSeconds(.1f);
+            }
         }
     }
 }
