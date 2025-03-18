@@ -3,13 +3,15 @@ using NaughtyAttributes;
 using NaughtyAttributes.Test;
 using Unity.EditorCoroutines.Editor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class ComputeShaderHandler : MonoBehaviour
 {
     [Header("Settings")] [SerializeField, Range(1, 50f)]
     private float _radius = 15f;
 
-    [SerializeField, Range(0.000001f, 5f)] private float _delay = .1f;
+    [SerializeField, Range(0.000001f, 5f)] private float _delayGenerations = .1f;
+    [SerializeField, Range(0.000001f, 5f)] private float _delayNoise = .1f;
 
     [SerializeField] private Vector3Int _size;
 
@@ -58,19 +60,16 @@ public class ComputeShaderHandler : MonoBehaviour
         // Première étape: noise
         Dispatch(NoiseKernel);
 
-        yield return new WaitForSeconds(_delay / 2f);
+        yield return new WaitForSeconds(_delayNoise);
 
         // Ensuite, Lenia
 
-        // _computeShader.SetFloat("R", 15.0f);
         _computeShader.SetVector(Time, Shader.GetGlobalVector(Time));
-
-        yield return new WaitForSeconds(_delay);
         //yield break;
         while (true)
         {
             Dispatch(LeniaKernel);
-            yield return new WaitForSeconds(_delay);
+            yield return new WaitForSeconds(_delayGenerations);
         }
     }
 
