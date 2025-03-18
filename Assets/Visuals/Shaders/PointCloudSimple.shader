@@ -50,9 +50,15 @@ Shader "PointCloud/PointCloudSimple"
                 float life = _PointBuffer[v.vertexID];
                 float3 position = float3(
                     (v.vertexID % _Width) * _Size / float(_Width),
-                    (v.vertexID / _Width % _Height) * _Size / float(_Height),
+                    ((v.vertexID / _Width) % _Height) * _Size / float(_Height),
                     (v.vertexID / (_Width * _Height)) * _Size / float(_Depth)
                 );
+                //Treat life as an index for debug
+                //float3 positionLife = float3(
+                //    (life % _Width) * _Size / float(_Width),
+                //    ((life / _Width) % _Height) * _Size / float(_Height),
+                //    (life/ (_Width * _Height)) * _Size / float(_Depth)
+                //);
                 o.pos =
                     UnityObjectToClipPos(
                         float4(position, 1.0)
@@ -65,6 +71,7 @@ Shader "PointCloud/PointCloudSimple"
 
                 float4 color;
                 float fadedThreshold = 0.05;
+                float minAlpha = 0.0;//fadededThreshold;
                 float4 dead = float4(0, 0, 1, 1); // Blue
                 float4 mid = float4(0, 1, 0, 1); // Green
                 float4 full = float4(1, 0, 0, 1); // Red
@@ -78,12 +85,13 @@ Shader "PointCloud/PointCloudSimple"
                 {
                     color = lerp(mid, full, (life - 0.5) * 2.0);
                 }
-                //if (life <= fadedThreshold)
-                //{
-                //    //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
-                //    color.a = (life / fadedThreshold)*dead.a;
-                //}
-                
+                if (life <= fadedThreshold)
+                {
+                    //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
+                    color.a = max(minAlpha,(life / fadedThreshold)*dead.a);
+                }
+                //Display the UVW for debug :
+                //color = float4(positionLife,1);
                 o.color = color * _Tint;
                 return o;
             }
