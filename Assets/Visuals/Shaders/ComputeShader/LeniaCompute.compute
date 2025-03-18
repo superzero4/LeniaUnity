@@ -6,21 +6,22 @@ RWStructuredBuffer<float> _buffer;
 // #region Common
 int ResX;
 int ResY;
+int ResZ;
 float _Radius; // space resolution = kernel radius
 float4 _Time;
 
 bool firstFrame = false;
 bool mouse = false;
 
-int Index(uint2 id)
+int Index(uint3 id)
 {
     //For now we only suppoer xy
-    return id.y * ResX + id.x;
+    return id.z * ResX * ResY + id.y * ResX + id.x;
 }
 
 // #endregion
 // #region Input
-float ReadInput(uint2 txy)
+float ReadInput(uint3 txy)
 {
     return _buffer[Index(txy)];
     //With interpolation handled by the sampler, would support values that doesn't not represent preicely a pixel
@@ -37,12 +38,10 @@ float bell(float x, float m, float s)
 [numthreads(8,8,1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    float2 uv = float2(float(id.x) / float(ResX), float(id.y) / float(ResY));
-
     float sum = 0.0f;
     float total = 0.0f;
 
-    const float dt = 1.0f/10.0f; // time step
+    const float dt = 1.0f / 10.0f; // time step
     const float mu = 0.14f; // growth center
     const float sigma = 0.014f; // growth width
     const float rho = 0.5f; // kernel center
@@ -52,12 +51,16 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     {
         for (int y = -int(_Radius); y <= int(_Radius); y++)
         {
-            float r = sqrt(float(x * x + y * y)) / _Radius;
-            uint2 txy = uint2(id.x + x, id.y + y);
-            float neighbourValue = ReadInput(txy);
-            float weight = bell(r, rho, omega);
-            sum += neighbourValue * weight;
-            total += weight;
+            int zMax = 0; //_Radius
+            for (int z = -int(zMax); z <= int(zMax); z++)
+            {
+                float r = sqrt(float(x * x + y * y + z * z)) / _Radius;
+                uint3 txyz = uint3(id.x + x, id.y + y, id.z + z);
+                float neighbourValue = ReadInput(txyz);
+                float weight = bell(r, rho, omega);
+                sum += neighbourValue * weight;
+                total += weight;
+            }
         }
     }
 
@@ -115,7 +118,10 @@ float noise(float2 p)
 [numthreads(8,8,1)]
 void NoiseMain(uint3 id : SV_DispatchThreadID)
 {
-    _buffer[Index(id)] = 0.073f + noise(float2(float(id.x)/_Radius, float(id.y)/_Radius));
+    float x = float(id.x) / _Radius;
+    float y = float(id.y) / _Radius;
+    float z = (float(id.z) / ResZ) * 100;
+    _buffer[Index(id)] = 0.073f + noise(float2(x + z, y + z));
 }
 
 // #endregion

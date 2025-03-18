@@ -8,8 +8,8 @@ public class ComputeShaderHandler : MonoBehaviour
 {
     [Header("Settings")] [SerializeField, Range(1, 50f)]
     private float _radius = 15f;
-    [SerializeField, Range(0.000001f, 5f)]
-    private float _delay = .1f;
+
+    [SerializeField, Range(0.000001f, 5f)] private float _delay = .1f;
 
     [SerializeField] private Vector3Int _size;
 
@@ -24,6 +24,7 @@ public class ComputeShaderHandler : MonoBehaviour
     private static readonly int Radius = Shader.PropertyToID("_Radius");
     private static readonly int ResX = Shader.PropertyToID("ResX");
     private static readonly int ResY = Shader.PropertyToID("ResY");
+    private static readonly int ResZ = Shader.PropertyToID("ResZ");
     private static readonly int Time = Shader.PropertyToID("_Time");
     private static readonly int Mouse = Shader.PropertyToID("mouse");
     private const int LeniaKernel = 0;
@@ -51,6 +52,7 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetBuffer(LeniaKernel, BufferId, _buffer);
         _computeShader.SetInt(ResX, _size.x);
         _computeShader.SetInt(ResY, _size.y);
+        _computeShader.SetInt(ResZ, _size.z);
         _computeShader.SetFloat(Radius, _radius);
         // Première étape: noise
         Dispatch(NoiseKernel);
