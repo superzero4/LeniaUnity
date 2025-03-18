@@ -8,7 +8,7 @@ public class Texture3DSO : ScriptableObject
     [SerializeField] private Texture3D _texture;
     [SerializeField] private string _texturePath;
 
-    public void SetTexture(Texture3D texture, string nameAppendix)
+    public void Save(Texture3D texture, string nameAppendix)
     {
         _texture = texture;
         Save(nameAppendix);
@@ -23,7 +23,7 @@ public class Texture3DSO : ScriptableObject
         AssetDatabase.SaveAssets();
     }
     [Button("Save")]
-    public void Action()
+    public void SaveSampleTexture()
     {
         _texture = new Texture3D(2, 2, 2, TextureFormat.RFloat, false);
         Color[] colors = new Color[8];

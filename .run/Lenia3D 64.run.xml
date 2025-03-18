@@ -1,5 +1,5 @@
 ﻿<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Lenia3D" type="PythonConfigurationType" factoryName="Python" singleton="false">
+  <configuration default="false" name="Lenia3D 64" type="PythonConfigurationType" factoryName="Python" singleton="false">
     <module name="rider.module" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
@@ -9,7 +9,7 @@
     </envs>
     <option name="SDK_HOME" value="" />
     <option name="SDK_NAME" value="Python 3.12 (.virtualenvs) (2)" />
-    <option name="WORKING_DIRECTORY" value="C:\Data\Projects\Unity\Lenia\External\Lenia\Python" />
+    <option name="WORKING_DIRECTORY" value="C:\Data\Projects\Unity\LeniaUnity\External\Lenia\Python" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
