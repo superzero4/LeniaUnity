@@ -61,8 +61,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     {
         for (int y = -int(_Radius); y <= int(_Radius); y++)
         {
-            int zMax = 0; //_Radius
-            for (int z = -int(zMax); z <= int(zMax); z++)
+            for (int z = -int(_Radius); z <= int(_Radius); z++)
             {
                 float r = sqrt(float(x * x + y * y + z * z)) / _Radius;
                 uint3 txyz = uint3(id.x + x, id.y + y, id.z + z);
