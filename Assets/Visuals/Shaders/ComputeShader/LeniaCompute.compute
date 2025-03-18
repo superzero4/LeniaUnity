@@ -52,8 +52,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float total = 0.0f;
 
     const float dt = 1.0f / 10.0f; // time step
-    const float mu = 0.14f; // growth center
-    const float sigma = 0.014f; // growth width
+    const float mu = 0.12f; // growth center
+    const float sigma = 0.01f; // growth width
     const float rho = 0.5f; // kernel center
     const float omega = 0.15f; // kernel width
 
