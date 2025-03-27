@@ -37,21 +37,21 @@ Shader "PointCloud/PointCloudSimple"
 
             StructuredBuffer<float> _PointBuffer;
             float4x4 _Transform;
-            float4 _Tint;
-            float _PointSize;
-            uint _Width;
-            uint _Height;
-            uint _Depth;
-            float _Size;
+            const float4 _Tint;
+            const float _PointSize;
+            const uint _Width;
+            const uint _Height;
+            const uint _Depth;
+            const float _Size;
 
             v2f vert(appdata v)
             {
                 v2f o;
                 float life = _PointBuffer[v.vertexID];
                 float3 position = float3(
-                    (v.vertexID % _Width) * _Size / float(_Width),
-                    ((v.vertexID / _Width) % _Height) * _Size / float(_Height),
-                    (v.vertexID / (_Width * _Height)) * _Size / float(_Depth)
+                    v.vertexID % _Width * _Size / float(_Width),
+                    v.vertexID / _Width % _Height * _Size / float(_Height),
+                    v.vertexID / (_Width * _Height) * _Size / float(_Depth)
                 );
                 //Treat life as an index for debug
                 //float3 positionLife = float3(
@@ -70,11 +70,10 @@ Shader "PointCloud/PointCloudSimple"
                 o.pointSize = _PointSize;
 
                 float4 color;
-                float fadedThreshold = 0.05;
-                float minAlpha = 0.0;//fadedThreshold;
-                float4 dead = float4(0, 0, 1, 1); // Blue
-                float4 mid = float4(0, 1, 0, 1); // Green
-                float4 full = float4(1, 0, 0, 1); // Red
+                const float fadedThreshold = 0.05;
+                const float4 dead = float4(0, 0, 1, 1);// Blue
+                const float4 mid = float4(0, 1, 0, 1); // Green
+                const float4 full = float4(1, 0, 0, 1);// Red
 
                  // Interpolate between colors based on lifeValue
                 if (life < 0.5)
@@ -88,7 +87,7 @@ Shader "PointCloud/PointCloudSimple"
                 if (life <= fadedThreshold)
                 {
                     //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
-                    color.a = max(minAlpha,(life / fadedThreshold)*dead.a);
+                    color.a = max(0.0, life / fadedThreshold * dead.a);
                 }
                 //Display the UVW for debug :
                 //color = float4(positionLife,1);

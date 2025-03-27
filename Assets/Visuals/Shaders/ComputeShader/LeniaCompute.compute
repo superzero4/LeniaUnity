@@ -6,7 +6,6 @@ StructuredBuffer<float> _Input;
 RWStructuredBuffer<float> _Output;
 
 // #region Common
-int ResX;
 cbuffer ShaderParams
 {
     uint ResX;

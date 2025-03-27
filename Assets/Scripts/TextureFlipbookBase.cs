@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NaughtyAttributes;
@@ -12,6 +11,7 @@ public abstract class TextureFlipbookBase : MonoBehaviour
     [SerializeField, Range(0.001f, 2f)] private float _delay;
     [SerializeField] private string _texturePath = "Assets/Visuals/Textures/";
 
+    #if UNITY_EDITOR
     [Button("Load Textures at specified _texturePath")]
     private void LoadTextures()
     {
@@ -36,6 +36,7 @@ public abstract class TextureFlipbookBase : MonoBehaviour
         if (_textures.Count == 0)
             Debug.LogError("No textures found at path: " + _texturePath + " update it and try again");
     }
+    #endif
 
     public List<Texture3D> Textures => _textures;
 

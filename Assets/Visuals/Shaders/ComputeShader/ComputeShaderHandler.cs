@@ -1,10 +1,10 @@
 using System;
 using System.Collections;
 using NaughtyAttributes;
-using NaughtyAttributes.Test;
-using Unity.EditorCoroutines.Editor;
 using UnityEngine;
-using UnityEngine.Serialization;
+#if UNITY_EDITOR
+using Unity.EditorCoroutines.Editor;
+#endif
 
 public class ComputeShaderHandler : MonoBehaviour
 {
@@ -101,7 +101,9 @@ public class ComputeShaderHandler : MonoBehaviour
         _buffer2.Release();
     }
 
+#if UNITY_EDITOR
     EditorCoroutine _routine;
+#endif
 
     //[Button]
     public void Run()
@@ -110,8 +112,10 @@ public class ComputeShaderHandler : MonoBehaviour
         Stop();
         if (Application.isPlaying)
             StartCoroutine(Routine());
+#if UNITY_EDITOR
         else
             _routine = EditorCoroutineUtility.StartCoroutineOwnerless(Routine());
+#endif
     }
 
     private void OnDestroy()
@@ -131,7 +135,9 @@ public class ComputeShaderHandler : MonoBehaviour
     {
         if (_routine != null)
         {
+#if UNITY_EDITOR
             EditorCoroutineUtility.StopCoroutine(_routine);
+#endif
             _buffer?.Release();
             _buffer2?.Release();
         }

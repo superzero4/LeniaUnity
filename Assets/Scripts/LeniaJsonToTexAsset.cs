@@ -1,9 +1,8 @@
-using System.Collections;
-using System.Globalization;
+#if UNITY_EDITOR
+
 using System.IO;
 using System.Threading;
 using UnityEngine;
-using System.Xml;
 using DefaultNamespace;
 using NaughtyAttributes;
 using Unity.EditorCoroutines.Editor;
@@ -88,3 +87,5 @@ public class LeniaJsonToTexAsset : MonoBehaviour
     {
     }
 }
+
+#endif
