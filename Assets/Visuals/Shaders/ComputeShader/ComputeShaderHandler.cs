@@ -7,8 +7,8 @@ using UnityEngine.Serialization;
 
 public class ComputeShaderHandler : MonoBehaviour
 {
-    [Header("Settings")] [SerializeField, Range(1, 50f)]
-    private float _radius = 15f;
+    [Header("Settings")] [SerializeField, Range(1, 50)]
+    private int _radius = 15;
 
     [SerializeField, Tooltip("Noise used instead")]
     private Texture3D _texture;
@@ -24,8 +24,11 @@ public class ComputeShaderHandler : MonoBehaviour
     [SerializeField] private Texture2D _baseTexture;
 
     private ComputeBuffer _buffer;
+    private ComputeBuffer _buffer2;
 
     private static readonly int BufferId = Shader.PropertyToID("_buffer");
+    private static readonly int BufferBool = Shader.PropertyToID("_mainBuffer");
+    private static readonly int Buffer2Id = Shader.PropertyToID("_buffer2");
     private static readonly int Radius = Shader.PropertyToID("_Radius");
     private static readonly int ResX = Shader.PropertyToID("ResX");
     private static readonly int ResY = Shader.PropertyToID("ResY");
@@ -38,7 +41,7 @@ public class ComputeShaderHandler : MonoBehaviour
     public ComputeBuffer Buffer => _buffer;
 
     public Vector3Int Size => _size;
-
+    private bool toggle;
     private void Dispatch(int kernelIndex)
     {
         int factor = 8; //Should be equal, for each dimension, to the numThreads values in the shader
@@ -54,9 +57,12 @@ public class ComputeShaderHandler : MonoBehaviour
     {
         if (_buffer != null)
             _buffer.Release();
+        if (_buffer2 != null)
+            _buffer2.Release();
         if (!UseNoise)
             _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
         _buffer = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
+        _buffer2 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
         if (!UseNoise)
         {
             _buffer.SetData(_texture.GetPixelData<float>(0));
@@ -64,10 +70,11 @@ public class ComputeShaderHandler : MonoBehaviour
 
         _computeShader.SetBuffer(NoiseKernel, BufferId, _buffer);
         _computeShader.SetBuffer(LeniaKernel, BufferId, _buffer);
+        _computeShader.SetBuffer(LeniaKernel, Buffer2Id, _buffer2);
         _computeShader.SetInt(ResX, _size.x);
         _computeShader.SetInt(ResY, _size.y);
         _computeShader.SetInt(ResZ, _size.z);
-        _computeShader.SetFloat(Radius, _radius);
+        _computeShader.SetInt(Radius, _radius);
         // Première étape: noise
         if (UseNoise)
             Dispatch(NoiseKernel);
@@ -79,9 +86,12 @@ public class ComputeShaderHandler : MonoBehaviour
 
         _computeShader.SetVector(Time, Shader.GetGlobalVector(Time));
         //yield break;
+        toggle = true;
         while (true)
         {
+            _computeShader.SetBool(BufferBool, toggle);
             Dispatch(LeniaKernel);
+            toggle = !toggle;
             yield return new WaitForSeconds(_delayGenerations);
         }
     }

@@ -2,12 +2,14 @@
 #pragma kernel NoiseMain
 
 RWStructuredBuffer<float> _buffer;
+RWStructuredBuffer<float> _buffer2;
+float _mainBuffer;
 
 // #region Common
 int ResX;
 int ResY;
 int ResZ;
-float _Radius; // space resolution = kernel radius
+int _Radius; // space resolution = kernel radius
 float4 _Time;
 
 bool firstFrame = false;
@@ -23,9 +25,21 @@ int Index(uint3 id)
 // #region Input
 float ReadInput(uint3 txy)
 {
-    return _buffer[Index(txy)];
+    if (_mainBuffer > .5f)
+        return _buffer[Index(txy)];
+    else
+        return _buffer2[Index(txy)];
     //With interpolation handled by the sampler, would support values that doesn't not represent preicely a pixel
     //return sampler_Input.SampleLevel(sampler_Input, float2(txy.x, txy.y) / float2(ResX, ResY), 0).r;
+}
+
+void WriteOutput(uint3 txy, float value)
+{
+    //The opposite
+    if (_mainBuffer < .5f)
+        _buffer[Index(txy)] = value;
+    else
+        _buffer2[Index(txy)] = value;
 }
 
 float bell(float x, float m, float s)
@@ -41,6 +55,7 @@ float quad(float r)
 
 float quadGrowth(float n, float m, float s)
 {
+    //  np.maximum(0, 1 - (n-m)**2 / (9 * s**2) )**4
     return pow(max(0, 1 - pow(n - m, 2) / (9 * s * s)), 4);
 }
 
@@ -51,38 +66,47 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float sum = 0.0f;
     float total = 0.0f;
 
-    const float dt = 1.0f / 10.0f; // time step
+    const float dt = 0.1f; // time step
     const float mu = 0.12f; // growth center
     const float sigma = 0.01f; // growth width
     const float rho = 0.5f; // kernel center
     const float omega = 0.15f; // kernel width
-
-    for (int x = -int(_Radius); x <= int(_Radius); x++)
+    for (int x = -_Radius; x <= _Radius; x++)
     {
-        for (int y = -int(_Radius); y <= int(_Radius); y++)
+        if (!(id.x >= x && id.x < ResX - x))
+            continue;
+        for (int y = -_Radius; y <= _Radius; y++)
         {
-            for (int z = -int(_Radius); z <= int(_Radius); z++)
+            if (!(id.y >= y && id.y < ResY - y))
+                continue;
+            for (int z = -_Radius; z <= _Radius; z++)
             {
+                if (!(id.z >= z && id.z < ResZ - z))
+                    continue;
                 float r = sqrt(float(x * x + y * y + z * z)) / _Radius;
                 if (r > 1.0f)
-                    continue;//We want a circular quad kernel
+                    continue; //We want a circular quad kernel
                 uint3 txyz = uint3(id.x + x, id.y + y, id.z + z);
-                float neighbourValue = ReadInput(txyz);
-                float weight = bell(r, rho, omega);
-                weight = quad(r); //Used in original python lenia for 3D instead of bell for kenel
+                //float neighbourValue = ReadInput(txyz);
+                float neighbourValue = 10;
+                //float weight = bell(r, rho, omega);
+                float weight = quad(r); //Used in original python lenia for 3D instead of bell for kenel
                 sum += neighbourValue * weight;
                 total += weight;
             }
         }
     }
-
+    //GroupMemoryBarrierWithGroupSync();
     float avg = sum / total;
     float val = ReadInput(id);
     float growth = quadGrowth(avg, mu, sigma) * 2.0f - 1.0f;
     float color = clamp(val + dt * growth, 0.f, 1.f);
+    uint3 center = id;
+    //Debugging the quad kernel function "range"
+    //color = quad(sqrt(float(center.x * center.x + center.y * center.y + center.z * center.z)) / _Radius);
     //avg =  .10f;
     //Debugging index of the buffer : float displayedValue = float(Index(id))/float(ResX*ResY*2);
-    _buffer[Index(id)] = color;
+    WriteOutput(id, color);
     //_Output[id.xy] = float4(uv.x, uv.y, 0, 1);
 
     /*
