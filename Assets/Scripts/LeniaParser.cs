@@ -13,19 +13,31 @@ public class LeniaParser
     int step;
     private NumberFormatInfo formatInfo;
 
-    public void Init(TextureSettings settings)
+    public TextureSettings TextureSettings => _settings;
+
+    public Lenia3D Lenia => lenia;
+    StringBuilder nbBuffer = new StringBuilder();
+    private int firstDepth;
+
+    public void Init(TextureSettings settings, int firstDepth)
     {
+        firstDepth = 0;
         this._settings = settings;
-        depth = 0;
         step = -1;
         lenia = new();
+        //First generation
+        depth = firstDepth;
+        this.firstDepth = firstDepth;
+        if (firstDepth >= 1)
+            lenia.generations.Add(new(_settings.size.x));
         formatInfo = new NumberFormatInfo();
-        formatInfo.NumberDecimalSeparator = ",";
+        formatInfo.NumberDecimalSeparator = ".";
+        nbBuffer = new StringBuilder();
     }
 
-    public void NewLine(string line)
+    public void NewBlock(string block)
     {
-        NewLine(line, out _);
+        NewBlock(block, out _);
     }
 
     /// <summary>
@@ -33,65 +45,71 @@ public class LeniaParser
     /// </summary>
     /// <param name="line"></param>
     /// <param name="texture">Not null only if we succesfully parsed a full generation</param>
-    public void NewLine(string line, [CanBeNull] out Texture3D texture)
+    public void NewBlock(string block, [CanBeNull] out Texture3D texture)
     {
+        //Debug.Log("New block in parser : " + block);
         texture = null;
         string filtered = "";
         float value;
-        StringBuilder sb = new();
-        foreach (var str in line.Split(','))
+        foreach (var character in block)
         {
-            sb.Clear();
-            foreach (var ch in str)
+            switch (character)
             {
-                if (ch == '[' || ch == ']' || ch == '.' || char.IsDigit(ch) || ch == 'n' || ch == 'a')
-                {
-                    sb.Append(ch);
-                }
-            }
+                case '[':
+                    depth++;
+                    switch (depth)
+                    {
+                        case 1:
+                            lenia.generations.Add(new(_settings.size.x));
+                            step++;
+                            break;
+                        case 2:
+                            lenia.generations[^1].Add(new(_settings.size.y));
+                            //Debug.Log("Parsed...");
+                            break;
+                        case 3:
+                            lenia.generations[^1][^1].Add(new(_settings.size.z));
+                            break;
+                    }
 
-            filtered = sb.ToString();
-            int cnt1 = 0;
-            while (cnt1 < filtered.Length && filtered[cnt1] == '[')
-            {
-                depth++;
-                switch (depth)
-                {
-                    case 1:
-                        lenia.generations.Add(new(_settings.size.x));
-                        step++;
-                        if (step >= 1)
+                    break;
+                case ',':
+                case ']':
+                    if (character == ']')
+                    {
+                        depth--;
+                        if (depth == firstDepth)
                         {
-                            texture = SetTexture(step - 1);
+                            texture = SetTexture(step);
                             Debug.LogWarning("Parsed one generation");
                         }
+                        //We closed a generation
+                    }
 
-                        break;
-                    case 2:
-                        lenia.generations[^1].Add(new(_settings.size.y));
-                        //Debug.Log("Parsed...");
-                        break;
-                    case 3:
-                        //case 4:
-                        lenia.generations[^1][^1].Add(new(_settings.size.z));
-                        break;
-                }
+                    if (nbBuffer.Length > 0)
+                    {
+                        filtered = nbBuffer.ToString();
+                        if (float.TryParse(filtered, NumberStyles.Any, formatInfo, out value))
+                            lenia.generations[^1][^1][^1].Add(value);
+                        else if (filtered.ToLower().Contains("nan".ToLower()))
+                            lenia.generations[^1][^1][^1].Add(-1f);
+                        nbBuffer.Clear();
+                    }
 
-                cnt1++;
+                    break;
+                default:
+                    if (char.IsDigit(character) || character == formatInfo.NumberDecimalSeparator[0] ||
+                        character == 'n' || character == 'a')
+                    {
+                        nbBuffer.Append(character);
+                    }
+                    else
+                    {
+                        //Ignored characters
+                    }
+
+                    break;
             }
-
-            int cnt2 = 1;
-            while (cnt2 <= filtered.Length && filtered[^cnt2] == ']')
-            {
-                depth--;
-                cnt2++;
-            }
-
-            filtered = filtered.Substring(cnt1, filtered.Length - (cnt1 + cnt2 - 1));
-            if (float.TryParse(filtered, NumberStyles.Any, formatInfo, out value))
-                lenia.generations[^1][^1][^1].Add(value);
-            else if (filtered.ToLower().Contains("nan".ToLower()))
-                lenia.generations[^1][^1][^1].Add(-1f);
         }
     }
 
@@ -117,7 +135,8 @@ public class LeniaParser
                     if (_pixelSize == 1)
                     {
                         //Ramp from blue to red based on value representing life of a cell
-                        color = new Color(pixel[offset], 0f, 1 - pixel[offset], Mathf.Lerp(0.2f, 1f, pixel[offset]));
+                        color = new Color(pixel[offset], 0f, 1 - pixel[offset],
+                            Mathf.Lerp(0.2f, 1f, pixel[offset]));
                     }
                     else
                     {

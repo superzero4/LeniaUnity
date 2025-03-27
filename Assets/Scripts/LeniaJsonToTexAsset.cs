@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Globalization;
 using System.IO;
+using System.Threading;
 using UnityEngine;
 using System.Xml;
+using DefaultNamespace;
 using NaughtyAttributes;
 using Unity.EditorCoroutines.Editor;
 
@@ -10,19 +12,32 @@ public class LeniaJsonToTexAsset : MonoBehaviour
 {
     [Header("Run settings")] private bool _cancel;
     [SerializeField] private Texture3DSO _textureSO;
+
     [SerializeField] private string _path;
+
     //[SerializeField] private TextureSettings _settings;
-    [Header("Result")] 
-    [SerializeField] [ReadOnly] private Texture3D _texture;
+    [Header("Result")] [SerializeField] [ReadOnly]
+    private Texture3D _texture;
+
     private EditorCoroutine _running;
-    private StreamReader _reader;
+
+    private CancellationTokenSource _toker;
+    [SerializeField] LeniaParser parser = new();
 
     [Button("Process the file at _path into 3DTextures")]
     private void Run()
     {
         if (_running == null)
         {
-            //_running = EditorCoroutineUtility.StartCoroutine(ProcessFile(), this);
+            _toker = new CancellationTokenSource();
+            parser.Init(new TextureSettings(TextureFormat.RFloat, 1, 64), 1);
+            var streamReader = new StreamReader(File.OpenRead(_path));
+            FindObjectsByType<PythonCaller>(FindObjectsSortMode.None)[0].ReadOutput(
+                streamReader, _toker, () => streamReader.EndOfStream, s =>
+                {
+                    parser.NewBlock(s);
+                    Debug.Log(parser.Lenia.DimensionsString);
+                });
         }
         else
         {
@@ -35,6 +50,7 @@ public class LeniaJsonToTexAsset : MonoBehaviour
     private void Cancel()
     {
         _cancel = true;
+        _toker.Cancel();
     }
 
     /*
@@ -44,7 +60,7 @@ public class LeniaJsonToTexAsset : MonoBehaviour
         _cancel = false;
         DirectoryInfo parent = new DirectoryInfo(Application.dataPath).Parent;
         _reader = new StreamReader(File.OpenRead(Path.Combine(parent.FullName, _path)));
-        
+
         string line;
         //LeniaParser parser = new();
         //parser.Init(_settings);
@@ -70,6 +86,5 @@ public class LeniaJsonToTexAsset : MonoBehaviour
 
     private void OnDestroy()
     {
-        _reader?.Close();
     }
 }
