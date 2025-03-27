@@ -25,10 +25,14 @@ int Index(uint3 id)
 // #region Input
 float ReadInput(uint3 txy)
 {
+    ReadInput(Index(txy));
+}
+float ReadInput(int t)
+{
     if (_mainBuffer > .5f)
-        return _buffer[Index(txy)];
+        return _buffer[t];
     else
-        return _buffer2[Index(txy)];
+        return _buffer2[t];
     //With interpolation handled by the sampler, would support values that doesn't not represent preicely a pixel
     //return sampler_Input.SampleLevel(sampler_Input, float2(txy.x, txy.y) / float2(ResX, ResY), 0).r;
 }
@@ -71,31 +75,15 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     const float sigma = 0.01f; // growth width
     const float rho = 0.5f; // kernel center
     const float omega = 0.15f; // kernel width
-    for (int x = -_Radius; x <= _Radius; x++)
+    int bufferSize = ResX * ResY * ResZ;
+    float2 input[bufferSize];
+    for (int i = 0; i < bufferSize; i++)
     {
-        if (!(id.x >= x && id.x < ResX - x))
-            continue;
-        for (int y = -_Radius; y <= _Radius; y++)
-        {
-            if (!(id.y >= y && id.y < ResY - y))
-                continue;
-            for (int z = -_Radius; z <= _Radius; z++)
-            {
-                if (!(id.z >= z && id.z < ResZ - z))
-                    continue;
-                float r = sqrt(float(x * x + y * y + z * z)) / _Radius;
-                if (r > 1.0f)
-                    continue; //We want a circular quad kernel
-                uint3 txyz = uint3(id.x + x, id.y + y, id.z + z);
-                //float neighbourValue = ReadInput(txyz);
-                float neighbourValue = 10;
-                //float weight = bell(r, rho, omega);
-                float weight = quad(r); //Used in original python lenia for 3D instead of bell for kenel
-                sum += neighbourValue * weight;
-                total += weight;
-            }
-        }
+        input[i] = float2(ReadInput(i), 0);
     }
+    float2 output[bufferSize];
+    fft(input,output);
+    
     //GroupMemoryBarrierWithGroupSync();
     float avg = sum / total;
     float val = ReadInput(id);

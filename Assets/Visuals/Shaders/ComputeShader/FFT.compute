@@ -1,0 +1,23 @@
+//#pragma kernel FFT
+//#pragma kernel IFFT
+
+StructuredBuffer<float> _in;
+RWStructuredBuffer<float> _out;
+ 
+// Kernel 0
+//[numthreads(8,8,8)]
+//void FFT(uint3 id : SV_DispatchThreadID)
+//{
+//    _out[Index(id)] = _in[Index(id)];
+//}
+////Kernel 1
+//
+//
+//[numthreads(8,8,8)]
+//void IFFT(uint3 id : SV_DispatchThreadID)
+//{
+//    float x = float(id.x) / _Radius;
+//    float y = float(id.y) / _Radius;
+//    float z = (float(id.z) / ResZ) * 100;
+//    _buffer[Index(id)] = 0.073f + noise(float2(x + z, y + z));
+//}
