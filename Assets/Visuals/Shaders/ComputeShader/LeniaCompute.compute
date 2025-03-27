@@ -12,6 +12,9 @@ cbuffer ShaderParams
     uint ResY;
     uint ResZ;
     uint _Radius; // space resolution = kernel radius
+    float dt = 0.1f; // time step
+    float mu = 0.12f; // growth center
+    float sigma = 0.01f; // growth width //Bert chan is 0.01f;
     float4 _Time;
 }
 
@@ -47,49 +50,54 @@ inline uint boundMod(int val, uint bound)
     return (sum % bound);
 }
 
+#define THREADS 8
+groupshared float sharedData[THREADS][THREADS][THREADS];
 // Kernel 0
-[numthreads(8,8,8)]
+[numthreads(THREADS,THREADS,THREADS)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
+    // Declare shared memory
+
+    // Load data into shared memory
+    uint3 localId = id % THREADS;
+    uint3 groupID = id / THREADS;
+    float val = _Input[Index(id)];
+    sharedData[localId.x][localId.y][localId.z] = val;
+    GroupMemoryBarrierWithGroupSync();
+    //_Output[Index(id)] = val;
+
     float sum = 0.0f;
     float total = 0.0f;
-    const float dt = 0.1f; // time step
-    const float mu = 0.12f; // growth center
-    const float sigma = 0.01f; // growth width //Bert chan is 0.01f;
     //const float rho = 0.5f; // kernel center
     //const float omega = 0.15f; // kernel width
     const uint diameter = 2 * _Radius + 1;
     const uint MAX = pow(diameter, 3);
     UNITY_LOOP for (uint index = 0; index < MAX; index++)
     {
-        int idX = id.x + x;
-        if (idX < 0) idX += ResX;
-        if (idX >= ResX) idX -= ResX;
-        for (int y = -_Radius; y <= _Radius; y++)
-        {
-            int idY = id.y + y;
-            if (idY < 0) idY += ResY;
-            if (idY >= ResY) idY -= ResY;
-            for (int z = -_Radius; z <= _Radius; z++)
-            {
-                int idZ = id.z + z;
-                if (idZ < 0) idZ += ResZ;
-                if (idZ >= ResZ) idZ -= ResZ;
-                float r = sqrt(float(x * x + y * y + z * z)) / _Radius;
-                if (r > 1.0f)
-                    continue; //We want a circular quad kernel
-                uint3 txyz = uint3(idX, idY, idZ);
-                float neighbourValue = ReadInput(txyz);
-                //float weight = bell(r, rho, omega);
-                float weight = quad(r); //Used in original python lenia for 3D instead of bell for kenel
-                sum += neighbourValue * weight;
-                total += weight;
-            }
-        }
+        int x = (index / (diameter * diameter)) - _Radius;
+        int y = ((index / diameter) % diameter) - _Radius;
+        int z = (index % diameter) - _Radius;
+        //z is smallest step, when we increase z by should only check the next memory location
+
+        uint idX = boundMod(int(id.x) + x, ResX);
+        uint idY = boundMod(int(id.y) + y, ResY);
+        int idZ = boundMod(int(id.z) + z, ResZ);
+
+        float r = sqrt(float(x * x + y * y + z * z)) / _Radius; //We want a circular quad kernel
+        uint3 txyz = uint3(idX, idY, idZ);
+        bool inLocal = groupID == txyz / THREADS;
+        //float neighbourValue = _Input[Index(txyz)];
+        float neighbourValue = inLocal
+                                   ? sharedData[txyz.x%THREADS][txyz.y%THREADS][txyz.z%THREADS]
+                                   : _Input[Index(txyz)];
+        //float neighbourValue = .5f;//_Input[Index(txyz)];
+        //float weight = bell(r, rho, omega);
+        float weight = (r <= 1.f) * quad(r); //Used in original python lenia for 3D instead of bell for kenel
+        sum += neighbourValue * weight;
+        total += weight;
     }
     //GroupMemoryBarrierWithGroupSync();
     float avg = sum / total;
-    float val = _Input[Index(id)];
     float growth = quadGrowth(avg, mu, sigma) * 2.0f - 1.0f;
     float color = clamp(val + dt * growth, 0.f, 1.f);
     //color = quadGrowth(avg, mu, sigma);

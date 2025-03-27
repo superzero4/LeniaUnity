@@ -11,6 +11,10 @@ public class ComputeShaderHandler : MonoBehaviour
     [Header("Settings")] [SerializeField, Range(1, 50)]
     private int _radius = 15;
 
+    [SerializeField, Range(0, 1f)] private float _timeStep = 0.1f;
+    [SerializeField, Range(0, 1f)] private float _mu = 0.12f;
+    [SerializeField, Range(0, .1f)] private float _sigma = 0.01f;
+
     [SerializeField, Tooltip("Noise used instead")]
     private Texture3D _texture;
 
@@ -35,6 +39,9 @@ public class ComputeShaderHandler : MonoBehaviour
     private static readonly int ResZ = Shader.PropertyToID("ResZ");
     private static readonly int Time = Shader.PropertyToID("_Time");
     private static readonly int Mouse = Shader.PropertyToID("mouse");
+    private static readonly int dt = Shader.PropertyToID("dt");
+    private static readonly int mu = Shader.PropertyToID("mu");
+    private static readonly int sigma = Shader.PropertyToID("sigma");
     private const int LeniaKernel = 0;
     private const int NoiseKernel = 1;
 
@@ -75,6 +82,9 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetInt(ResY, _size.y);
         _computeShader.SetInt(ResZ, _size.z);
         _computeShader.SetInt(Radius, _radius);
+        _computeShader.SetFloat(dt, _timeStep);
+        _computeShader.SetFloat(mu, _mu);
+        _computeShader.SetFloat(sigma, _sigma);
         // Première étape: noise
         if (UseNoise)
             Dispatch(NoiseKernel);
@@ -133,14 +143,14 @@ public class ComputeShaderHandler : MonoBehaviour
     //[Button]
     private void Stop()
     {
+#if UNITY_EDITOR
         if (_routine != null)
         {
-#if UNITY_EDITOR
             EditorCoroutineUtility.StopCoroutine(_routine);
-#endif
-            _buffer?.Release();
-            _buffer2?.Release();
         }
+#endif
+        _buffer?.Release();
+        _buffer2?.Release();
     }
 
     void Start()

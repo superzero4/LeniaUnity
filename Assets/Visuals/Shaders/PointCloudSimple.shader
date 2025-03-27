@@ -14,13 +14,14 @@ Shader "PointCloud/PointCloudSimple"
         }
         Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
+        Cull Front
         Pass
         {
             CGPROGRAM
             #define SQUARE_GEOMETRY 0
             #pragma vertex vert
             #pragma fragment frag
-            #pragma geometry geom
+            //#pragma geometry geom
             #include "UnityCG.cginc"
 
             struct appdata
@@ -95,7 +96,7 @@ Shader "PointCloud/PointCloudSimple"
                 return o;
             }
             #if SQUARE_GEOMETRY
-            [maxvertexcount(36)]
+            [maxvertexcount(8)]
             void geom(point v2f input[1], inout TriangleStream<v2f> triStream)
             {
                 v2f o;
