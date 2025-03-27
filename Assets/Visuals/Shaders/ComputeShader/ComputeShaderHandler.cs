@@ -27,9 +27,8 @@ public class ComputeShaderHandler : MonoBehaviour
     private ComputeBuffer _buffer;
     private ComputeBuffer _buffer2;
 
-    private static readonly int BufferId = Shader.PropertyToID("_buffer");
-    private static readonly int BufferBool = Shader.PropertyToID("_mainBuffer");
-    private static readonly int Buffer2Id = Shader.PropertyToID("_buffer2");
+    private static readonly int Input = Shader.PropertyToID("_Input");
+    private static readonly int Output = Shader.PropertyToID("_Output");
     private static readonly int Radius = Shader.PropertyToID("_Radius");
     private static readonly int ResX = Shader.PropertyToID("ResX");
     private static readonly int ResY = Shader.PropertyToID("ResY");
@@ -69,9 +68,9 @@ public class ComputeShaderHandler : MonoBehaviour
             _buffer2.SetData(_texture.GetPixelData<float>(0));
         }
 
-        _computeShader.SetBuffer(NoiseKernel, BufferId, _buffer);
-        _computeShader.SetBuffer(LeniaKernel, BufferId, _buffer);
-        _computeShader.SetBuffer(LeniaKernel, Buffer2Id, _buffer2);
+        _computeShader.SetBuffer(NoiseKernel, Input, _buffer);
+        _computeShader.SetBuffer(LeniaKernel, Input, _buffer);
+        _computeShader.SetBuffer(LeniaKernel, Output, _buffer2);
         _computeShader.SetInt(ResX, _size.x);
         _computeShader.SetInt(ResY, _size.y);
         _computeShader.SetInt(ResZ, _size.z);
@@ -90,7 +89,9 @@ public class ComputeShaderHandler : MonoBehaviour
         toggle = false;
         while (true)
         {
-            _computeShader.SetBool(BufferBool, toggle);
+            //_computeShader.SetBool(BufferBool, toggle);
+            _computeShader.SetBuffer(LeniaKernel, Input, toggle ? _buffer : _buffer2);
+            _computeShader.SetBuffer(LeniaKernel, Output, toggle ? _buffer2 : _buffer);
             Dispatch(LeniaKernel);
             toggle = !toggle;
             yield return new WaitForSeconds(_delayGenerations);

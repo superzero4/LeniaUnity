@@ -1,9 +1,9 @@
 #pragma kernel CSMain
 #pragma kernel NoiseMain
+#include <HLSLSupport.cginc>
 
-RWStructuredBuffer<float> _buffer;
-RWStructuredBuffer<float> _buffer2;
-float _mainBuffer;
+StructuredBuffer<float> _Input;
+RWStructuredBuffer<float> _Output;
 
 // #region Common
 int ResX;
@@ -14,6 +14,14 @@ float4 _Time;
 
 bool firstFrame = false;
 bool mouse = false;
+cbuffer ShaderParams
+{
+    uint ResX;
+    uint ResY;
+    uint ResZ;
+    uint _Radius; // space resolution = kernel radius
+    float4 _Time;
+}
 
 int Index(uint3 id)
 {
@@ -23,24 +31,6 @@ int Index(uint3 id)
 
 // #endregion
 // #region Input
-float ReadInput(uint3 txy)
-{
-    if (_mainBuffer > .5f)
-        return _buffer[Index(txy)];
-    else
-        return _buffer2[Index(txy)];
-    //With interpolation handled by the sampler, would support values that doesn't not represent preicely a pixel
-    //return sampler_Input.SampleLevel(sampler_Input, float2(txy.x, txy.y) / float2(ResX, ResY), 0).r;
-}
-
-void WriteOutput(uint3 txy, float value)
-{
-    //The opposite
-    if (_mainBuffer < .5f)
-        _buffer[Index(txy)] = value;
-    else
-        _buffer2[Index(txy)] = value;
-}
 
 float bell(float x, float m, float s)
 {
@@ -100,13 +90,13 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     }
     //GroupMemoryBarrierWithGroupSync();
     float avg = sum / total;
-    float val = ReadInput(id);
+    float val = _Input[Index(id)];
     float growth = quadGrowth(avg, mu, sigma) * 2.0f - 1.0f;
     float color = clamp(val + dt * growth, 0.f, 1.f);
     //color = quadGrowth(avg, mu, sigma);
     //color = sum;
     uint3 center = id;
-    WriteOutput(id, color);
+    _Output[Index(id)] = color;
     //Debugging the quad kernel function "range"
     //color = quad(sqrt(float(center.x * center.x + center.y * center.y + center.z * center.z)) / _Radius);
     //avg =  .10f;
@@ -161,7 +151,7 @@ void NoiseMain(uint3 id : SV_DispatchThreadID)
     float x = float(id.x) / _Radius;
     float y = float(id.y) / _Radius;
     float z = (float(id.z) / ResZ) * 100;
-    _buffer[Index(id)] = 0.073f + noise(float2(x + z, y + z));
+    _Output[Index(id)] = 0.073f + noise(float2(x + z, y + z));
 }
 
 // #endregion
