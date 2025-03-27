@@ -68,27 +68,29 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     const float dt = 0.1f; // time step
     const float mu = 0.12f; // growth center
-    const float sigma = 0.01f; // growth width
+    const float sigma = 0.01f; // growth width //Bert chan is 0.01f;
     const float rho = 0.5f; // kernel center
     const float omega = 0.15f; // kernel width
     for (int x = -_Radius; x <= _Radius; x++)
     {
-        if (!(id.x >= x && id.x < ResX - x))
-            continue;
+        int idX = id.x + x;
+        if (idX < 0) idX += ResX;
+        if (idX >= ResX) idX -= ResX;
         for (int y = -_Radius; y <= _Radius; y++)
         {
-            if (!(id.y >= y && id.y < ResY - y))
-                continue;
+            int idY = id.y + y;
+            if (idY < 0) idY += ResY;
+            if (idY >= ResY) idY -= ResY;
             for (int z = -_Radius; z <= _Radius; z++)
             {
-                if (!(id.z >= z && id.z < ResZ - z))
-                    continue;
+                int idZ = id.z + z;
+                if (idZ < 0) idZ += ResZ;
+                if (idZ >= ResZ) idZ -= ResZ;
                 float r = sqrt(float(x * x + y * y + z * z)) / _Radius;
                 if (r > 1.0f)
                     continue; //We want a circular quad kernel
-                uint3 txyz = uint3(id.x + x, id.y + y, id.z + z);
-                //float neighbourValue = ReadInput(txyz);
-                float neighbourValue = 10;
+                uint3 txyz = uint3(idX, idY, idZ);
+                float neighbourValue = ReadInput(txyz);
                 //float weight = bell(r, rho, omega);
                 float weight = quad(r); //Used in original python lenia for 3D instead of bell for kenel
                 sum += neighbourValue * weight;
@@ -101,12 +103,14 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float val = ReadInput(id);
     float growth = quadGrowth(avg, mu, sigma) * 2.0f - 1.0f;
     float color = clamp(val + dt * growth, 0.f, 1.f);
+    //color = quadGrowth(avg, mu, sigma);
+    //color = sum;
     uint3 center = id;
+    WriteOutput(id, color);
     //Debugging the quad kernel function "range"
     //color = quad(sqrt(float(center.x * center.x + center.y * center.y + center.z * center.z)) / _Radius);
     //avg =  .10f;
     //Debugging index of the buffer : float displayedValue = float(Index(id))/float(ResX*ResY*2);
-    WriteOutput(id, color);
     //_Output[id.xy] = float4(uv.x, uv.y, 0, 1);
 
     /*

@@ -66,6 +66,7 @@ public class ComputeShaderHandler : MonoBehaviour
         if (!UseNoise)
         {
             _buffer.SetData(_texture.GetPixelData<float>(0));
+            _buffer2.SetData(_texture.GetPixelData<float>(0));
         }
 
         _computeShader.SetBuffer(NoiseKernel, BufferId, _buffer);
@@ -86,7 +87,7 @@ public class ComputeShaderHandler : MonoBehaviour
 
         _computeShader.SetVector(Time, Shader.GetGlobalVector(Time));
         //yield break;
-        toggle = true;
+        toggle = false;
         while (true)
         {
             _computeShader.SetBool(BufferBool, toggle);
