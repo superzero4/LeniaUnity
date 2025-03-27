@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using NaughtyAttributes;
 using NaughtyAttributes.Test;
@@ -42,6 +43,7 @@ public class ComputeShaderHandler : MonoBehaviour
 
     public Vector3Int Size => _size;
     private bool toggle;
+
     private void Dispatch(int kernelIndex)
     {
         int factor = 8; //Should be equal, for each dimension, to the numThreads values in the shader
@@ -55,10 +57,8 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private IEnumerator Routine()
     {
-        if (_buffer != null)
-            _buffer.Release();
-        if (_buffer2 != null)
-            _buffer2.Release();
+        _buffer?.Release();
+        _buffer2?.Release();
         if (!UseNoise)
             _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
         _buffer = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
@@ -95,11 +95,14 @@ public class ComputeShaderHandler : MonoBehaviour
             toggle = !toggle;
             yield return new WaitForSeconds(_delayGenerations);
         }
+
+        _buffer.Release();
+        _buffer2.Release();
     }
 
     EditorCoroutine _routine;
 
-    [Button]
+    //[Button]
     public void Run()
     {
         Debug.ClearDeveloperConsole();
@@ -110,11 +113,27 @@ public class ComputeShaderHandler : MonoBehaviour
             _routine = EditorCoroutineUtility.StartCoroutineOwnerless(Routine());
     }
 
-    [Button]
+    private void OnDestroy()
+    {
+        _buffer?.Release();
+        _buffer2?.Release();
+    }
+
+    private void OnApplicationQuit()
+    {
+        _buffer?.Release();
+        _buffer2?.Release();
+    }
+
+    //[Button]
     private void Stop()
     {
         if (_routine != null)
+        {
             EditorCoroutineUtility.StopCoroutine(_routine);
+            _buffer?.Release();
+            _buffer2?.Release();
+        }
     }
 
     void Start()

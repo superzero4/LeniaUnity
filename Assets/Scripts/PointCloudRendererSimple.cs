@@ -17,7 +17,7 @@ public class PointCloudRendererSimple : MonoBehaviour
     void Start()
     {
         pointMaterial = new Material(pointShader);
-        SendToShader();
+        //SendToShader();
 
         // Create the material
     }
@@ -43,8 +43,8 @@ public class PointCloudRendererSimple : MonoBehaviour
 
         if (pointBuffer == null || !pointBuffer.IsValid() || pointBuffer.count != pixelArray.Length)
         {
-            if (pointBuffer != null)
-                pointBuffer.Release();
+            pointBuffer?.Release();
+            pointBuffer?.Dispose();
             pointBuffer = new ComputeBuffer(pixelArray.Length, sizeof(float) * 4);
         }
 
@@ -80,10 +80,12 @@ public class PointCloudRendererSimple : MonoBehaviour
     void OnDestroy()
     {
         // Release the ComputeBuffer when it's no longer needed
-        if (pointBuffer != null)
-        {
-            pointBuffer.Release();
-        }
+        pointBuffer?.Release();
+    }
+
+    void OnApplicationQuit()
+    {
+        pointBuffer?.Release();
     }
 
     public void SetTexture(Texture3D texture3D)
