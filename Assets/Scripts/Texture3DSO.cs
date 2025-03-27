@@ -17,10 +17,12 @@ public class Texture3DSO : ScriptableObject
     public void Save(string nameAppendix)
     {
         var p = _texturePath + "-" + nameAppendix + ".asset";
+        #if UNITY_EDITOR
         if (AssetDatabase.AssetPathExists(p))
             AssetDatabase.DeleteAsset(p);
         AssetDatabase.CreateAsset(_texture, p);
         AssetDatabase.SaveAssets();
+        #endif
     }
     [Button("Save")]
     public void SaveSampleTexture()
@@ -36,4 +38,5 @@ public class Texture3DSO : ScriptableObject
         _texture.Apply();
         Save("tex222");
     }
+
 }

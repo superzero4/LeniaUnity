@@ -1,10 +1,9 @@
 using System.Collections;
 using NaughtyAttributes;
-using NaughtyAttributes.Test;
-using Unity.EditorCoroutines.Editor;
 using UnityEngine;
-using UnityEngine.Serialization;
-
+#if UNITY_EDITOR
+using Unity.EditorCoroutines.Editor;
+#endif
 public class ComputeShaderHandler : MonoBehaviour
 {
     [Header("Settings")] [SerializeField, Range(1, 50)]
@@ -55,12 +54,9 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private IEnumerator Routine()
     {
-        if (_buffer != null)
-            _buffer.Release();
-        if (_buffer2 != null)
-            _buffer2.Release();
-        if (!UseNoise)
-            _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
+        _buffer?.Release();
+        _buffer2?.Release();
+        if (!UseNoise) _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
         _buffer = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
         _buffer2 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
         if (!UseNoise)
@@ -97,7 +93,9 @@ public class ComputeShaderHandler : MonoBehaviour
         }
     }
 
+    #if UNITY_EDITOR
     EditorCoroutine _routine;
+    #endif
 
     [Button]
     public void Run()
@@ -106,15 +104,19 @@ public class ComputeShaderHandler : MonoBehaviour
         Stop();
         if (Application.isPlaying)
             StartCoroutine(Routine());
+#if UNITY_EDITOR
         else
             _routine = EditorCoroutineUtility.StartCoroutineOwnerless(Routine());
+#endif
     }
 
     [Button]
     private void Stop()
     {
+#if UNITY_EDITOR
         if (_routine != null)
             EditorCoroutineUtility.StopCoroutine(_routine);
+#endif
     }
 
     void Start()

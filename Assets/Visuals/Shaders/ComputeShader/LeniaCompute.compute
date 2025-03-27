@@ -27,8 +27,8 @@ float ReadInput(uint3 txy)
 {
     if (_mainBuffer > .5f)
         return _buffer[Index(txy)];
-    else
-        return _buffer2[Index(txy)];
+    
+    return _buffer2[Index(txy)];
     //With interpolation handled by the sampler, would support values that doesn't not represent preicely a pixel
     //return sampler_Input.SampleLevel(sampler_Input, float2(txy.x, txy.y) / float2(ResX, ResY), 0).r;
 }

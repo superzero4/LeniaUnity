@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using UnityEngine;
 
 public class PointCloudRendererSimple : MonoBehaviour
