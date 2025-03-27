@@ -51,7 +51,7 @@ inline uint boundMod(int val, uint bound)
 }
 
 #define THREADS 8
-groupshared float sharedData[THREADS][THREADS][THREADS];
+//groupshared float sharedData[THREADS][THREADS][THREADS];
 // Kernel 0
 [numthreads(THREADS,THREADS,THREADS)]
 void CSMain(uint3 id : SV_DispatchThreadID)
@@ -62,8 +62,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     uint3 localId = id % THREADS;
     uint3 groupID = id / THREADS;
     float val = _Input[Index(id)];
-    sharedData[localId.x][localId.y][localId.z] = val;
-    GroupMemoryBarrierWithGroupSync();
+    //sharedData[localId.x][localId.y][localId.z] = val;
+    //GroupMemoryBarrierWithGroupSync();
     //_Output[Index(id)] = val;
 
     float sum = 0.0f;
@@ -85,11 +85,12 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
         float r = sqrt(float(x * x + y * y + z * z)) / _Radius; //We want a circular quad kernel
         uint3 txyz = uint3(idX, idY, idZ);
-        bool inLocal = groupID == txyz / THREADS;
+        //bool inLocal = groupID == txyz / THREADS;
         //float neighbourValue = _Input[Index(txyz)];
-        float neighbourValue = inLocal
-                                   ? sharedData[txyz.x%THREADS][txyz.y%THREADS][txyz.z%THREADS]
-                                   : _Input[Index(txyz)];
+        //float neighbourValue = inLocal
+          //                         ? sharedData[txyz.x%THREADS][txyz.y%THREADS][txyz.z%THREADS]
+          //                         : _Input[Index(txyz)];
+        float neighbourValue =  _Input[Index(txyz)];
         //float neighbourValue = .5f;//_Input[Index(txyz)];
         //float weight = bell(r, rho, omega);
         float weight = (r <= 1.f) * quad(r); //Used in original python lenia for 3D instead of bell for kenel
@@ -100,7 +101,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float avg = sum / total;
     float growth = quadGrowth(avg, mu, sigma) * 2.0f - 1.0f;
     float color = clamp(val + dt * growth, 0.f, 1.f);
-    //color = quadGrowth(avg, mu, sigma);
+    color = quadGrowth(avg, mu, sigma);
     //color = sum;
     uint3 center = id;
     _Output[Index(id)] = color;
