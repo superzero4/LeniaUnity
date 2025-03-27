@@ -96,6 +96,7 @@ public class PointCloudRendererSimple : MonoBehaviour
 
     public void SetBuffer(ComputeBuffer buff, Vector3Int size)
     {
+        pointBuffer?.Dispose();
         pointMaterial = new Material(pointShader);
         pointBuffer = buff;
         UpdateView(size.x, size.y, size.z);
