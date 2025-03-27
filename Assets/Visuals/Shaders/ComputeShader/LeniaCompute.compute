@@ -64,6 +64,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
             for (int z = -int(_Radius); z <= int(_Radius); z++)
             {
                 float r = sqrt(float(x * x + y * y + z * z)) / _Radius;
+                if (r > 1.0f)
+                    continue;//We want a circular quad kernel
                 uint3 txyz = uint3(id.x + x, id.y + y, id.z + z);
                 float neighbourValue = ReadInput(txyz);
                 float weight = bell(r, rho, omega);
