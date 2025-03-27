@@ -71,7 +71,7 @@ Shader "PointCloud/PointCloudSimple"
 
                 float4 color;
                 float fadedThreshold = 0.05;
-                float minAlpha = 0.0;//fadededThreshold;
+                float minAlpha = 0.0;//fadedThreshold;
                 float4 dead = float4(0, 0, 1, 1); // Blue
                 float4 mid = float4(0, 1, 0, 1); // Green
                 float4 full = float4(1, 0, 0, 1); // Red
