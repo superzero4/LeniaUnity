@@ -48,6 +48,7 @@ namespace Visuals.Shaders.ComputeShader
         {
             yield return new WaitUntil(() => _compute.Buffer != null);
             yield return new WaitForEndOfFrame();
+            yield break;
             while (true)
             {
                 Increment();
