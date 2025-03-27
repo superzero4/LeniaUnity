@@ -7,13 +7,6 @@ RWStructuredBuffer<float> _Output;
 
 // #region Common
 int ResX;
-int ResY;
-int ResZ;
-int _Radius; // space resolution = kernel radius
-float4 _Time;
-
-bool firstFrame = false;
-bool mouse = false;
 cbuffer ShaderParams
 {
     uint ResX;
@@ -23,30 +16,36 @@ cbuffer ShaderParams
     float4 _Time;
 }
 
-int Index(uint3 id)
+inline uint Index(uint3 id)
 {
     //For now we only suppoer xy
-    return id.z * ResX * ResY + id.y * ResX + id.x;
+    return id.z + id.y * ResZ + id.x * ResY * ResZ;
 }
 
 // #endregion
 // #region Input
 
-float bell(float x, float m, float s)
+inline float bell(float x, float m, float s)
 {
     //exp(-(x-m)^2/(2s^2))
     return exp(-((x - m) * (x - m)) / (s * s * 2.f)); // bell-shaped curve
 }
 
-float quad(float r)
+inline float quad(float r)
 {
     return pow(4 * r * (1 - r), 4);
 }
 
-float quadGrowth(float n, float m, float s)
+inline float quadGrowth(float n, float m, float s)
 {
     //  np.maximum(0, 1 - (n-m)**2 / (9 * s**2) )**4
     return pow(max(0, 1 - pow(n - m, 2) / (9 * s * s)), 4);
+}
+
+inline uint boundMod(int val, uint bound)
+{
+    uint sum = val + bound; //Positive as long as val isn't < -bounde
+    return (sum % bound);
 }
 
 // Kernel 0
@@ -55,13 +54,14 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 {
     float sum = 0.0f;
     float total = 0.0f;
-
     const float dt = 0.1f; // time step
     const float mu = 0.12f; // growth center
     const float sigma = 0.01f; // growth width //Bert chan is 0.01f;
-    const float rho = 0.5f; // kernel center
-    const float omega = 0.15f; // kernel width
-    for (int x = -_Radius; x <= _Radius; x++)
+    //const float rho = 0.5f; // kernel center
+    //const float omega = 0.15f; // kernel width
+    const uint diameter = 2 * _Radius + 1;
+    const uint MAX = pow(diameter, 3);
+    UNITY_LOOP for (uint index = 0; index < MAX; index++)
     {
         int idX = id.x + x;
         if (idX < 0) idX += ResX;
