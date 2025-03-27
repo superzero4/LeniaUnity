@@ -18,6 +18,9 @@ namespace DefaultNamespace
 {
     public class PythonCaller : MonoBehaviour
     {
+        [SerializeField, Range(1, 64 * 64 * 64)]
+        private int _readBuffer;
+
         [InfoBox("Select the local correct interpretor/venv that has correct package installation")]
         [SerializeField]
         [CanBeNull]
@@ -107,30 +110,37 @@ namespace DefaultNamespace
             //_process.MinWorkingSet = new IntPtr(2000000000);
             _process.PriorityClass = ProcessPriorityClass.High;
             _cancel = new CancellationTokenSource();
-            _running1 = ReadOutput(_process.StandardError, Debug.LogWarning);
-            _running2 = ReadOutput(_process.StandardOutput, onOutput);
+            Func<bool> endCondition = () => _process != null && _process.HasExited;
+            _running1 = ReadOutput(_process.StandardError, _cancel, endCondition, Debug.LogWarning);
+            _running2 = ReadOutput(_process.StandardOutput, _cancel, endCondition, onOutput);
         }
 
-        public async Task ReadOutput(StreamReader stream, Action<string> onOutput = null)
+        public async Task ReadOutput(StreamReader stream, CancellationTokenSource _cancel,
+            Func<bool> endCondition = null, Action<string> onOutput = null)
         {
             try
             {
-                while (!_cancel.IsCancellationRequested && _process != null && !_process.HasExited)
+                char[] buffer = new char[_readBuffer];
+                while (!(_cancel.IsCancellationRequested || (endCondition != null && endCondition.Invoke())))
                 {
-                    var line = await stream.ReadLineAsync();
-                    if (!string.IsNullOrEmpty(line))
+                    int val = await stream.ReadBlockAsync(buffer, 0, buffer.Length);
+                    Debug.Log($"One {_readBuffer / 1024} KBytes Block read from reader");
+                    if (val > 0)
                     {
-                        onOutput?.Invoke(line);
+                        onOutput?.Invoke(new string(buffer, 0, val));
                     }
 
-                    await Task.Delay(160);
+                    //await Task.Delay(1);
                 }
             }
             catch (Exception e)
             {
                 Debug.LogError(e);
-                throw e;
+                //throw e;
             }
+
+            onOutput?.Invoke(stream.ReadToEnd());
+            stream.Dispose();
         }
     }
 }
