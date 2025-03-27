@@ -10,6 +10,9 @@ public class ComputeShaderHandler : MonoBehaviour
     [Header("Settings")] [SerializeField, Range(1, 50f)]
     private float _radius = 15f;
 
+    [SerializeField, Tooltip("Noise used instead")]
+    private Texture3D _texture;
+
     [SerializeField, Range(0.000001f, 5f)] private float _delayGenerations = .1f;
     [SerializeField, Range(0.000001f, 5f)] private float _delayNoise = .1f;
 
@@ -38,18 +41,26 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private void Dispatch(int kernelIndex)
     {
-        int factor = 8;//Should be equal, for each dimension, to the numThreads values in the shader
+        int factor = 8; //Should be equal, for each dimension, to the numThreads values in the shader
         int x = Mathf.Max(1, _size.x / factor);
         int y = Mathf.Max(1, _size.y / factor);
         int z = Mathf.Max(1, _size.z / factor);
         _computeShader.Dispatch(kernelIndex, x, y, z);
     }
 
+    private bool UseNoise => _texture == null;
+
     private IEnumerator Routine()
     {
         if (_buffer != null)
             _buffer.Release();
+        if (!UseNoise)
+            _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
         _buffer = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
+        if (!UseNoise)
+        {
+            _buffer.SetData(_texture.GetPixelData<float>(0));
+        }
 
         _computeShader.SetBuffer(NoiseKernel, BufferId, _buffer);
         _computeShader.SetBuffer(LeniaKernel, BufferId, _buffer);
@@ -58,7 +69,9 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetInt(ResZ, _size.z);
         _computeShader.SetFloat(Radius, _radius);
         // Première étape: noise
-        Dispatch(NoiseKernel);
+        if (UseNoise)
+            Dispatch(NoiseKernel);
+
 
         yield return new WaitForSeconds(_delayNoise);
 
