@@ -9,6 +9,7 @@ namespace Visuals.Shaders.ComputeShader
     {
         [FormerlySerializedAs("_displayedDepth")] [SerializeField, Range(0, 1024)]
         private int _displayedSlice = 0;
+        [SerializeField,Range(0,2f)] private float _incrementDelay = .01f;
 
         [SerializeField] private ComputeShaderHandler _compute;
         [SerializeField] private Material _material;
@@ -18,7 +19,7 @@ namespace Visuals.Shaders.ComputeShader
         [Button]
         private void UpdateTexture()
         {
-            if (_compute.Buffer == null)
+            if (_compute.ReadBuffer == null)
                 return;
             if (_texture == null || _texture.width != _compute.Size.x || _texture.height != _compute.Size.y)
             {
@@ -31,7 +32,7 @@ namespace Visuals.Shaders.ComputeShader
             //We want only a slice of the 3D data
             int sliceSize = _compute.Size.x * _compute.Size.y;
             float[] data = new float[sliceSize];
-            _compute.Buffer.GetData(data, 0, (_displayedSlice % _compute.Size.z) * sliceSize, sliceSize);
+            _compute.ReadBuffer.GetData(data, 0, (_displayedSlice % _compute.Size.z) * sliceSize, sliceSize);
             _texture.SetPixelData(data, 0);
             _texture.Apply();
             _material.SetTexture("_MainTex", _texture);
@@ -46,13 +47,12 @@ namespace Visuals.Shaders.ComputeShader
 
         private IEnumerator Start()
         {
-            yield return new WaitUntil(() => _compute.Buffer != null);
+            yield return new WaitUntil(() => _compute.ReadBuffer != null);
             yield return new WaitForEndOfFrame();
-            yield break;
             while (true)
             {
                 Increment();
-                yield return new WaitForSeconds(.1f);
+                yield return new WaitForSeconds(_incrementDelay);
             }
         }
     }

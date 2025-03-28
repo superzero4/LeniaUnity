@@ -9,14 +9,14 @@ namespace Visuals.Shaders.ComputeShader
         [SerializeField] private ComputeShaderHandler _compute;
         [SerializeField] private PointCloudRendererSimple _pcs;
         [Button]
-        void Bind()
+        public void Bind()
         {
-            var buff = _compute.Buffer;
-            _pcs.SetBuffer(buff, _compute.Size);
+            var buff = _compute.ReadBuffer;
+            _pcs.SetBuffer(buff, _compute.Size, false);
         }
         IEnumerator Start()
         {
-            yield return new WaitUntil(() => _compute.Buffer != null);
+            yield return new WaitUntil(() => _compute.ReadBuffer != null);
             yield return new WaitForEndOfFrame();
             Bind();
         }

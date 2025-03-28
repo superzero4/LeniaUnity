@@ -14,14 +14,14 @@ Shader "PointCloud/PointCloudSimple"
         }
         Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
-        Cull Front
+        //Cull False
         Pass
         {
             CGPROGRAM
             #define SQUARE_GEOMETRY 0
             #pragma vertex vert
             #pragma fragment frag
-            //#pragma geometry geom
+            #pragma geometry geom
             #include "UnityCG.cginc"
 
             struct appdata
@@ -81,9 +81,13 @@ Shader "PointCloud/PointCloudSimple"
                 {
                     color = lerp(dead, mid, life * 2.0);
                 }
-                else
+                else if (life <= 1.0)
                 {
                     color = lerp(mid, full, (life - 0.5) * 2.0);
+                }
+                else
+                {
+                    color = full;
                 }
                 if (life <= fadedThreshold)
                 {
