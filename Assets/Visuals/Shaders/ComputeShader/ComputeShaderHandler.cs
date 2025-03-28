@@ -40,11 +40,13 @@ public class ComputeShaderHandler : MonoBehaviour
 
     [SerializeField] private Texture2D _baseTexture;
 
-    private ComputeBuffer _buffer;
-    private ComputeBuffer _buffer2;
+    private ComputeBuffer _buffer1; //Init state
+    private ComputeBuffer _buffer2; //Convol in/out & Lenia out
+    private ComputeBuffer _buffer3; //Convol in/out intermediate without altering init state
     private ComputeBuffer _kernel;
 
     private static readonly int Input = Shader.PropertyToID("_Input");
+    private static readonly int Midput = Shader.PropertyToID("_MidPut");
     private static readonly int Output = Shader.PropertyToID("_Output");
     private static readonly int Radius = Shader.PropertyToID("_Radius");
     private static readonly int ResX = Shader.PropertyToID("ResX");
@@ -57,14 +59,17 @@ public class ComputeShaderHandler : MonoBehaviour
     private static readonly int sigma = Shader.PropertyToID("sigma");
     private static readonly int Kernel = Shader.PropertyToID("_kernel");
     private static readonly int KernelNorm = Shader.PropertyToID("kernelNorm");
+    private static readonly int Convolution = Shader.PropertyToID("convolDim");
     private const int LeniaKernel = 0;
     private const int NoiseKernel = 1;
+    private const int ConvolutionKernel = 2;
+    private const int CopyKernel = 3;
 
-    public ComputeBuffer ReadBuffer => toggle ? _buffer : _buffer2;
-    public ComputeBuffer WriteBuffer => !toggle ? _buffer : _buffer2;
+    public ComputeBuffer ReadBuffer => !buffer1isWrite ? _buffer3 : _buffer2;
+    public ComputeBuffer WriteBuffer => buffer1isWrite ? _buffer3 : _buffer2;
 
     public Vector3Int Size => _size;
-    private bool toggle;
+    private bool buffer1isWrite;
 
     private void Dispatch(int kernelIndex)
     {
@@ -79,22 +84,20 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private IEnumerator Routine()
     {
-        _buffer?.Release();
-        _buffer2?.Release();
-        _kernel?.Release();
+        ReleaseBuffers();
         if (!UseNoise)
             _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
-        _buffer = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
+        _buffer1 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
         _buffer2 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
         if (!UseNoise)
         {
-            _buffer.SetData(_texture.GetPixelData<float>(0));
+            _buffer1.SetData(_texture.GetPixelData<float>(0));
             _buffer2.SetData(_texture.GetPixelData<float>(0));
+            _buffer3 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
         }
 
-        _computeShader.SetBuffer(NoiseKernel, Input, _buffer);
-        _computeShader.SetBuffer(LeniaKernel, Input, _buffer);
-        _computeShader.SetBuffer(LeniaKernel, Output, _buffer2);
+        _computeShader.SetBuffer(NoiseKernel, Input, _buffer1);
+        //Inversion is basically assigning the correct one, we init this way;
         _computeShader.SetInt(ResX, _size.x);
         _computeShader.SetInt(ResY, _size.y);
         _computeShader.SetInt(ResZ, _size.z);
@@ -131,21 +134,29 @@ public class ComputeShaderHandler : MonoBehaviour
             {
                 for (int z = 0; z <= _radius; z++)
                 {
-                    var xmin = -x+_radius;
-                    var ymin = -y+_radius;
-                    var zmin = -z+_radius;
-                    var xmax = x+_radius;
-                    var ymax = y+_radius;
-                    var zmax = z+_radius;
+                    var xmin = -x + _radius;
+                    var ymin = -y + _radius;
+                    var zmin = -z + _radius;
+                    var xmax = x + _radius;
+                    var ymax = y + _radius;
+                    var zmax = z + _radius;
                     //We ensure the kernel is symmetrical and therefore symetrical;
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmax],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmin],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmax},{ymax},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmax],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmin],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmax],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmin],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmax],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmin],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmax],
+                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmin],
+                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmax},{ymax},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmax],
+                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmin],
+                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmax],
+                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmin],
+                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmax],
+                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmin],
+                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
                 }
             }
         }
@@ -153,7 +164,7 @@ public class ComputeShaderHandler : MonoBehaviour
         float[] flat = kernel.SelectMany(a => a.SelectMany(b => b)).ToArray();
         _kernel = new ComputeBuffer(flat.Length, sizeof(float));
         _kernel.SetData(flat);
-        _computeShader.SetBuffer(LeniaKernel, Kernel, _kernel);
+        _computeShader.SetBuffer(ConvolutionKernel, Kernel, _kernel);
         _computeShader.SetFloat(KernelNorm, norm);
         // Première étape: noise
         if (UseNoise)
@@ -166,20 +177,66 @@ public class ComputeShaderHandler : MonoBehaviour
 
         _computeShader.SetVector(Time, Shader.GetGlobalVector(Time));
         //yield break;
-        toggle = false;
+        buffer1isWrite = false;
+        (ComputeBuffer, ComputeBuffer)[] pingPongBuffers = new[]
+        {
+            (_buffer2, _buffer3),
+            (_buffer3, _buffer2),
+            (_buffer2, _buffer3)
+        };
+        //We define a ping pong series of buffer for intermediate steps;
         while (true)
         {
-            //_computeShader.SetBool(BufferBool, toggle);
-            _computeShader.SetBuffer(LeniaKernel, Input, ReadBuffer);
-            _computeShader.SetBuffer(LeniaKernel, Output, WriteBuffer);
+            //We copy last generation, to the _buffer1, untouched during intermediate steps
+            SetInOutBuffer(CopyKernel, pingPongBuffers[^1].Item1, _buffer1, true);
+            Dispatch(CopyKernel);
+            yield return new WaitForSeconds(_delayGenerations / 3f);
+            //Kernel is 3-Separable, we calculate the 3 axis separately with apply beetwen them
+            //We ping pong beetween 2 buffers using the buffers specified in the array, the very first buffer contains the result of the last generation, the result of each step will become the input of the the next step
+            for (int i = 0; i < 3; i++)
+            {
+                _computeShader.SetInt(Convolution, 2-i);
+                SetInOutBuffer(ConvolutionKernel, Midput, pingPongBuffers[i].Item1, pingPongBuffers[i].Item2);
+                Dispatch(ConvolutionKernel);
+                yield return new WaitForSeconds(_delayGenerations / 3f);
+            }
+
+            yield return new WaitForSeconds(_delayGenerations / 3f);
+            //For a new generation we need the result of the iterative convolution
+            SetMidBuffer(LeniaKernel, pingPongBuffers[2].Item2);
+            //We need the full untouched last generation info in _buffer1, we output the result in the last not in use buffer
+            SetInOutBuffer(LeniaKernel, _buffer1, pingPongBuffers[2].Item1);
             Dispatch(LeniaKernel);
-            toggle = !toggle;
-            _computeToVert.Bind();
-            yield return new WaitForSeconds(_delayGenerations);
+            yield return new WaitForSeconds(_delayGenerations / 3f);
         }
 
-        _buffer.Release();
-        _buffer2.Release();
+        ReleaseBuffers();
+    }
+
+    private void ReleaseBuffers()
+    {
+        _buffer1?.Release();
+        _buffer2?.Release();
+        _kernel?.Release();
+    }
+
+    private void SetInOutBuffer(int kernel, ComputeBuffer inBuffer, ComputeBuffer outBuffer, bool bindView = false)
+    {
+        SetInOutBuffer(kernel, Input, inBuffer, outBuffer, bindView);
+    }
+
+    private void SetInOutBuffer(int kernel, int inputIDOverride, ComputeBuffer inBuffer, ComputeBuffer outBuffer,
+        bool bindView = false)
+    {
+        if (bindView)
+            _computeToVert.Bind(outBuffer);
+        _computeShader.SetBuffer(kernel, inputIDOverride, inBuffer);
+        _computeShader.SetBuffer(kernel, Output, outBuffer);
+    }
+
+    private void SetMidBuffer(int kernel, ComputeBuffer midBuffer)
+    {
+        _computeShader.SetBuffer(kernel, Midput, midBuffer);
     }
 
 #if UNITY_EDITOR
@@ -201,16 +258,12 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private void OnDestroy()
     {
-        _buffer?.Release();
-        _buffer2?.Release();
-        _kernel?.Release();
+        ReleaseBuffers();
     }
 
     private void OnApplicationQuit()
     {
-        _buffer?.Release();
-        _buffer2?.Release();
-        _kernel?.Release();
+        ReleaseBuffers();
     }
 
     //[Button]
@@ -222,7 +275,7 @@ public class ComputeShaderHandler : MonoBehaviour
             EditorCoroutineUtility.StopCoroutine(_routine);
         }
 #endif
-        _buffer?.Release();
+        _buffer1?.Release();
         _buffer2?.Release();
     }
 
