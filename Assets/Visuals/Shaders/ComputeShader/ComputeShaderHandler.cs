@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEngine.UIElements;
 using Visuals.Shaders.ComputeShader;
 #if UNITY_EDITOR
 using Unity.EditorCoroutines.Editor;
@@ -16,9 +18,14 @@ public class ComputeShaderHandler : MonoBehaviour
     [Header("Settings")] [SerializeField, Range(1, 50)]
     private int _radius = 15;
 
-    [SerializeField, Range(0, 1f)] private float _timeStep = 0.1f;
-    [SerializeField, Range(0, 1f)] private float _mu = 0.12f;
-    [SerializeField, Range(0, .1f)] private float _sigma = 0.01f;
+    [SerializeField, Range(0, 1f), Tooltip("0.1f")]
+    private float _timeStep = 0.1f;
+
+    [SerializeField, Range(0, 1f), Tooltip("0.12f")]
+    private float _mu = 0.12f;
+
+    [SerializeField, Range(0, .1f), Tooltip("0.10f")]
+    private float _sigma = 0.01f;
 
     [SerializeField, Tooltip("Noise used instead")]
     private Texture3D _texture;
@@ -116,6 +123,31 @@ public class ComputeShaderHandler : MonoBehaviour
             }
 
             kernel[x + _radius] = yList;
+        }
+
+        for (int x = 0; x <= _radius; x++)
+        {
+            for (int y = 0; y <= _radius; y++)
+            {
+                for (int z = 0; z <= _radius; z++)
+                {
+                    var xmin = -x+_radius;
+                    var ymin = -y+_radius;
+                    var zmin = -z+_radius;
+                    var xmax = x+_radius;
+                    var ymax = y+_radius;
+                    var zmax = z+_radius;
+                    //We ensure the kernel is symmetrical and therefore symetrical;
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmax],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmin],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmax},{ymax},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmax],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmin],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmax],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmin],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmax],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmin],$"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                }
+            }
         }
 
         float[] flat = kernel.SelectMany(a => a.SelectMany(b => b)).ToArray();

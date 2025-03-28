@@ -13,16 +13,15 @@ cbuffer ShaderParams
     uint ResY;
     uint ResZ;
     uint _Radius; // space resolution = kernel radius
-    float dt = 0.1f; // time step
-    float mu = 0.12f; // growth center
-    float sigma = 0.01f; // growth width //Bert chan is 0.01f;
+    float dt; // time step
+    float mu; // growth center
+    float sigma; // growth width //Bert chan is 0.01f;
     float4 _Time;
     float kernelNorm;
 }
 
 inline uint Index(uint3 id)
 {
-    //For now we only suppoer xy
     return id.z + id.y * ResZ + id.x * ResY * ResZ;
 }
 
@@ -46,11 +45,6 @@ inline float bell(float x, float m, float s)
     return exp(-((x - m) * (x - m)) / (s * s * 2.f)); // bell-shaped curve
 }
 
-inline float quad(float r)
-{
-    return pow(4 * r * (1 - r), 4);
-}
-
 inline float quadGrowth(float n, float m, float s)
 {
     //  np.maximum(0, 1 - (n-m)**2 / (9 * s**2) )**4
@@ -70,7 +64,7 @@ float Loop(uint3 id, float write[128], uint dim)
     float sum = 0.0f;
     float total = 0.0f;
     int rad = (int)_Radius;
-    bool3 target = bool3(dim==0, dim==1, dim==2);
+    bool3 target = bool3(dim == 0, dim == 1, dim == 2);
     UNITY_LOOP for (int index = -rad; index <= rad; index++)
     {
         //z is smallest step, when we increase z by should only check the next memory location
@@ -120,8 +114,8 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float convoResult = 0.0f;
     //For easy debug change order of convolutions
     uint order[4] = {
-        2,
         1,
+        2,
         0,
         0
     };
