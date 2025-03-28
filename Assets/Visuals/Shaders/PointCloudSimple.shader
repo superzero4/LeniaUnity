@@ -9,11 +9,11 @@ Shader "PointCloud/PointCloudSimple"
     {
         Tags
         {
-            "Queue" = "Transparent"
-            "RenderType" = "Transparent"
+            "Queue" = "Geometry"
+            "RenderType" = "Geometry"
         }
-        Blend SrcAlpha OneMinusSrcAlpha
-        ZWrite Off
+        // Blend SrcAlpha OneMinusSrcAlpha
+        // ZWrite Off
         
         Pass
         {
@@ -88,7 +88,10 @@ Shader "PointCloud/PointCloudSimple"
                 if (life <= fadedThreshold)
                 {
                     //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
-                    color.a = max(0.0, life / fadedThreshold * dead.a);
+                    // color.a = max(0.0, life / fadedThreshold * dead.a);
+                    o.pos = float4(9999,9999,9999,9999);
+                    o.color = full;
+                    return o;
                 }
                 // Display the UVW for debug :
                 // color = float4(positionLife,1);
