@@ -61,7 +61,7 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private void Dispatch(int kernelIndex)
     {
-        int factor = 8; //Should be equal, for each dimension, to the numThreads values in the shader
+        int factor = 2; //Should be equal, for each dimension, to the numThreads values in the shader
         int x = Mathf.Max(1, _size.x / factor);
         int y = Mathf.Max(1, _size.y / factor);
         int z = Mathf.Max(1, _size.z / factor);
@@ -95,14 +95,15 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetFloat(dt, _timeStep);
         _computeShader.SetFloat(mu, _mu);
         _computeShader.SetFloat(sigma, _sigma);
-        float[][][] kernel = new float[2 * _radius + 1][][];
+        var diam = 2 * _radius + 1;
+        float[][][] kernel = new float[diam][][];
         float norm = 0;
         for (int x = -_radius; x <= _radius; x++)
         {
-            float[][] yList = new float[2 * _radius + 1][];
+            float[][] yList = new float[diam][];
             for (int y = -_radius; y <= _radius; y++)
             {
-                float[] zList = new float[2 * _radius + 1];
+                float[] zList = new float[diam];
                 for (int z = -_radius; z <= _radius; z++)
                 {
                     float r = Mathf.Sqrt(x * x + y * y + z * z) / _radius;
@@ -118,7 +119,7 @@ public class ComputeShaderHandler : MonoBehaviour
         }
 
         float[] flat = kernel.SelectMany(a => a.SelectMany(b => b)).ToArray();
-        _kernel = new ComputeBuffer((int)Mathf.Pow(_radius * 2 + 1, 3), sizeof(float));
+        _kernel = new ComputeBuffer(flat.Length, sizeof(float));
         _kernel.SetData(flat);
         _computeShader.SetBuffer(LeniaKernel, Kernel, _kernel);
         _computeShader.SetFloat(KernelNorm, norm);

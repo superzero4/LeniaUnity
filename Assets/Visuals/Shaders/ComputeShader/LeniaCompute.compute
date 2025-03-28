@@ -63,13 +63,14 @@ inline uint boundMod(int val, uint bound)
     return (sum % bound);
 }
 
-#define THREADS 8
-//                                            Only one true
-void Loop(uint3 id, bool3 target)
+#define THREADS 2
+//                  Only one true among x,y,z
+float Loop(uint3 id, float write[128], uint dim)
 {
     float sum = 0.0f;
     float total = 0.0f;
     int rad = (int)_Radius;
+    bool3 target = bool3(dim==0, dim==1, dim==2);
     UNITY_LOOP for (int index = -rad; index <= rad; index++)
     {
         //z is smallest step, when we increase z by should only check the next memory location
@@ -86,18 +87,17 @@ void Loop(uint3 id, bool3 target)
         //float neighbourValue = .5f;//_Input[Index(txyz)];
         //float weight = bell(r, rho, omega);
         // Kernel index is centered, it means 0 is the center of the kernel which is what we want actually, the center line, row or collumn
-        float weight = _kernel[KernelIndex(int3(target.x * index,
-                                                target.y * index,
-                                                target.z * index))];
+        float weight = _kernel[KernelIndex(offset)];
         //Used in original python lenia for 3D instead of bell for kenel
         sum += neighbourValue * weight;
         total += weight;
     }
-    _Input[Index(id)] = sum / total;
+    return sum / total;
 }
 
-//groupshared float sharedData[THREADS][THREADS][THREADS];
 // Kernel 0
+shared float shareD[128];
+
 [numthreads(THREADS,THREADS,THREADS)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -117,19 +117,47 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     const uint diam = diameter();
     const uint MAX = pow(diam, 3);
     //Kernel is 3-Separable, we calculate the 3 axis separately with apply beetwen them
-    Loop(id, bool3(true, false, false));
-    GroupMemoryBarrierWithGroupSync();
-    Loop(id, bool3(false, true, false));
-    GroupMemoryBarrierWithGroupSync();
-    Loop(id, bool3(false, false, true));
-    GroupMemoryBarrierWithGroupSync();
-    float avg = _Input[Index(id)]; //==sum / total;
+    float convoResult = 0.0f;
+    //For easy debug change order of convolutions
+    uint order[4] = {
+        2,
+        1,
+        0,
+        0
+    };
+    //On each dimension we :
+    //Compute the convolution on this dimension
+    //Ensure all reads have been made
+    //Write obtained value
+    //Ensure all writes have been made, we reapply before doing the next convolution
+    
+    convoResult = Loop(id, shareD, order[0]);
+    AllMemoryBarrierWithGroupSync();
+    _Input[Index(id)] = convoResult;
+    AllMemoryBarrierWithGroupSync();
+    
+    convoResult = Loop(id, shareD, order[1]);
+    AllMemoryBarrierWithGroupSync();
+    _Input[Index(id)] = convoResult;
+    AllMemoryBarrierWithGroupSync();
+    
+    convoResult = Loop(id, shareD, order[2]);
+    AllMemoryBarrierWithGroupSync();
+    _Input[Index(id)] = convoResult;
+    AllMemoryBarrierWithGroupSync();
+
+    
+    float avg = convoResult; //the cumulated result of all convo==sum / total;
     float growth = quadGrowth(avg, mu, sigma) * 2.0f - 1.0f;
     float color = clamp(val + dt * growth, 0.f, 1.f);
-    color = color;
     //color = quadGrowth(avg, mu, sigma);
+    //Debug Kernel :
     //color = (id.x >= 0 && id.y >= 0 && id.z >= 0 && id.x < diam && id.y < diam && id.z < diam)
     //            ? _kernel[KernelIndex(id-((int3)_Radius))]
+    //            : 0.f;
+    //Debug Kernel center lines (the one we use for 3X1D convolution)
+    //color = (id.x < diam && id.y < diam && id.z < diam && (id.x == _Radius || id.y == _Radius || id.z == _Radius))
+    //            ? _kernel[KernelIndex(id - ((int3)_Radius))]
     //            : 0.f;
     uint3 center = id;
     _Output[Index(id)] = color;
