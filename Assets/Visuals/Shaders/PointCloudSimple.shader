@@ -10,10 +10,10 @@ Shader "PointCloud/PointCloudSimple"
         Tags
         {
             "Queue" = "Geometry"
-            "RenderType" = "Geometry"
+            "RenderType" = "Transparent"
         }
-        // Blend SrcAlpha OneMinusSrcAlpha
-        // ZWrite Off
+        Cull Back
+        ZWrite On
         
         Pass
         {
@@ -43,6 +43,7 @@ Shader "PointCloud/PointCloudSimple"
             const uint _Height;
             const uint _Depth;
             const float _Size;
+            const float fadedThreshold = 0.01;
 
             v2f vert(appdata v)
             {
@@ -67,8 +68,7 @@ Shader "PointCloud/PointCloudSimple"
                 // o.pointSize = _PointSize;
 
                 float4 color;
-                const float fadedThreshold = 0.05;
-                const float4 dead = float4(0, 0, 1, 1);// Blue
+                const float4 dead = float4(0, 0, 1, 0);// Blue
                 const float4 mid = float4(0, 1, 0, 1); // Green
                 const float4 full = float4(1, 0, 0, 1);// Red
 
@@ -85,14 +85,6 @@ Shader "PointCloud/PointCloudSimple"
                 {
                     color = full;
                 }
-                if (life <= fadedThreshold)
-                {
-                    //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
-                    // color.a = max(0.0, life / fadedThreshold * dead.a);
-                    o.pos = float4(9999,9999,9999,9999);
-                    o.color = full;
-                    return o;
-                }
                 // Display the UVW for debug :
                 // color = float4(positionLife,1);
                 o.color = color * _Tint;
@@ -102,6 +94,10 @@ Shader "PointCloud/PointCloudSimple"
             [maxvertexcount(8)]
             void geom(point v2f input[1], inout TriangleStream<v2f> triStream)
             {
+                if (input[0].color.a <= fadedThreshold)
+                {
+                    return;
+                }
                 float aspect = _ScreenParams.x / _ScreenParams.y;
                 float xl = _PointSize;
                 float yl = _PointSize * aspect;
