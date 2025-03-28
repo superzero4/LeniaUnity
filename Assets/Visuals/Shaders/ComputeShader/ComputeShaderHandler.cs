@@ -1,13 +1,18 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using NaughtyAttributes;
 using UnityEngine;
+using Visuals.Shaders.ComputeShader;
 #if UNITY_EDITOR
 using Unity.EditorCoroutines.Editor;
 #endif
 
 public class ComputeShaderHandler : MonoBehaviour
 {
+    [SerializeField] private ComputeToVertex _computeToVert;
+
     [Header("Settings")] [SerializeField, Range(1, 50)]
     private int _radius = 15;
 
@@ -30,6 +35,7 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private ComputeBuffer _buffer;
     private ComputeBuffer _buffer2;
+    private ComputeBuffer _kernel;
 
     private static readonly int Input = Shader.PropertyToID("_Input");
     private static readonly int Output = Shader.PropertyToID("_Output");
@@ -42,10 +48,13 @@ public class ComputeShaderHandler : MonoBehaviour
     private static readonly int dt = Shader.PropertyToID("dt");
     private static readonly int mu = Shader.PropertyToID("mu");
     private static readonly int sigma = Shader.PropertyToID("sigma");
+    private static readonly int Kernel = Shader.PropertyToID("_kernel");
+    private static readonly int KernelNorm = Shader.PropertyToID("kernelNorm");
     private const int LeniaKernel = 0;
     private const int NoiseKernel = 1;
 
-    public ComputeBuffer Buffer => _buffer;
+    public ComputeBuffer ReadBuffer => toggle ? _buffer : _buffer2;
+    public ComputeBuffer WriteBuffer => !toggle ? _buffer : _buffer2;
 
     public Vector3Int Size => _size;
     private bool toggle;
@@ -65,6 +74,7 @@ public class ComputeShaderHandler : MonoBehaviour
     {
         _buffer?.Release();
         _buffer2?.Release();
+        _kernel?.Release();
         if (!UseNoise)
             _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
         _buffer = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
@@ -85,6 +95,33 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetFloat(dt, _timeStep);
         _computeShader.SetFloat(mu, _mu);
         _computeShader.SetFloat(sigma, _sigma);
+        float[][][] kernel = new float[2 * _radius + 1][][];
+        float norm = 0;
+        for (int x = -_radius; x <= _radius; x++)
+        {
+            float[][] yList = new float[2 * _radius + 1][];
+            for (int y = -_radius; y <= _radius; y++)
+            {
+                float[] zList = new float[2 * _radius + 1];
+                for (int z = -_radius; z <= _radius; z++)
+                {
+                    float r = Mathf.Sqrt(x * x + y * y + z * z) / _radius;
+                    float val = r <= 1f ? (float)Math.Pow(4 * r * (1 - r), 4) : 0f;
+                    norm += val;
+                    zList[z + _radius] = val;
+                }
+
+                yList[y + _radius] = zList;
+            }
+
+            kernel[x + _radius] = yList;
+        }
+
+        float[] flat = kernel.SelectMany(a => a.SelectMany(b => b)).ToArray();
+        _kernel = new ComputeBuffer((int)Mathf.Pow(_radius * 2 + 1, 3), sizeof(float));
+        _kernel.SetData(flat);
+        _computeShader.SetBuffer(LeniaKernel, Kernel, _kernel);
+        _computeShader.SetFloat(KernelNorm, norm);
         // Première étape: noise
         if (UseNoise)
             Dispatch(NoiseKernel);
@@ -100,10 +137,11 @@ public class ComputeShaderHandler : MonoBehaviour
         while (true)
         {
             //_computeShader.SetBool(BufferBool, toggle);
-            _computeShader.SetBuffer(LeniaKernel, Input, toggle ? _buffer : _buffer2);
-            _computeShader.SetBuffer(LeniaKernel, Output, toggle ? _buffer2 : _buffer);
+            _computeShader.SetBuffer(LeniaKernel, Input, ReadBuffer);
+            _computeShader.SetBuffer(LeniaKernel, Output, WriteBuffer);
             Dispatch(LeniaKernel);
             toggle = !toggle;
+            _computeToVert.Bind();
             yield return new WaitForSeconds(_delayGenerations);
         }
 
@@ -132,12 +170,14 @@ public class ComputeShaderHandler : MonoBehaviour
     {
         _buffer?.Release();
         _buffer2?.Release();
+        _kernel?.Release();
     }
 
     private void OnApplicationQuit()
     {
         _buffer?.Release();
         _buffer2?.Release();
+        _kernel?.Release();
     }
 
     //[Button]

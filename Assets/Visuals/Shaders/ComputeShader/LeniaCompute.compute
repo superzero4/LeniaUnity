@@ -2,8 +2,9 @@
 #pragma kernel NoiseMain
 #include <HLSLSupport.cginc>
 
-StructuredBuffer<float> _Input;
+RWStructuredBuffer<float> _Input;
 RWStructuredBuffer<float> _Output;
+StructuredBuffer<float> _kernel;
 
 // #region Common
 cbuffer ShaderParams
@@ -16,12 +17,24 @@ cbuffer ShaderParams
     float mu = 0.12f; // growth center
     float sigma = 0.01f; // growth width //Bert chan is 0.01f;
     float4 _Time;
+    float kernelNorm;
 }
 
 inline uint Index(uint3 id)
 {
     //For now we only suppoer xy
     return id.z + id.y * ResZ + id.x * ResY * ResZ;
+}
+
+inline uint diameter()
+{
+    return 2 * _Radius + 1;
+}
+
+inline uint KernelIndex(int3 id)
+{
+    uint diam = diameter();
+    return (id.z + _Radius) + (id.y + _Radius) * diam + (id.x + _Radius) * diam * diam;
 }
 
 // #endregion
@@ -51,6 +64,38 @@ inline uint boundMod(int val, uint bound)
 }
 
 #define THREADS 8
+//                                            Only one true
+void Loop(uint3 id, bool3 target)
+{
+    float sum = 0.0f;
+    float total = 0.0f;
+    int rad = (int)_Radius;
+    UNITY_LOOP for (int index = -rad; index <= rad; index++)
+    {
+        //z is smallest step, when we increase z by should only check the next memory location
+        int3 offset = int3(index * target.x, index * target.y, index * target.z);
+        uint idX = boundMod(int(id.x) + offset.x, ResX);
+        uint idY = boundMod(int(id.y) + offset.y, ResY);
+        uint idZ = boundMod(int(id.z) + offset.z, ResZ);
+        //bool inLocal = groupID == txyz / THREADS;
+        //float neighbourValue = _Input[Index(txyz)];
+        //float neighbourValue = inLocal
+        //                         ? sharedData[txyz.x%THREADS][txyz.y%THREADS][txyz.z%THREADS]
+        //                         : _Input[Index(txyz)];
+        float neighbourValue = _Input[Index(uint3(idX, idY, idZ))];
+        //float neighbourValue = .5f;//_Input[Index(txyz)];
+        //float weight = bell(r, rho, omega);
+        // Kernel index is centered, it means 0 is the center of the kernel which is what we want actually, the center line, row or collumn
+        float weight = _kernel[KernelIndex(int3(target.x * index,
+                                                target.y * index,
+                                                target.z * index))];
+        //Used in original python lenia for 3D instead of bell for kenel
+        sum += neighbourValue * weight;
+        total += weight;
+    }
+    _Input[Index(id)] = sum / total;
+}
+
 //groupshared float sharedData[THREADS][THREADS][THREADS];
 // Kernel 0
 [numthreads(THREADS,THREADS,THREADS)]
@@ -66,43 +111,26 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     //GroupMemoryBarrierWithGroupSync();
     //_Output[Index(id)] = val;
 
-    float sum = 0.0f;
-    float total = 0.0f;
+
     //const float rho = 0.5f; // kernel center
     //const float omega = 0.15f; // kernel width
-    const uint diameter = 2 * _Radius + 1;
-    const uint MAX = pow(diameter, 3);
-    UNITY_LOOP for (uint index = 0; index < MAX; index++)
-    {
-        int x = (index / (diameter * diameter)) - _Radius;
-        int y = ((index / diameter) % diameter) - _Radius;
-        int z = (index % diameter) - _Radius;
-        //z is smallest step, when we increase z by should only check the next memory location
-
-        uint idX = boundMod(int(id.x) + x, ResX);
-        uint idY = boundMod(int(id.y) + y, ResY);
-        int idZ = boundMod(int(id.z) + z, ResZ);
-
-        float r = sqrt(float(x * x + y * y + z * z)) / _Radius; //We want a circular quad kernel
-        uint3 txyz = uint3(idX, idY, idZ);
-        //bool inLocal = groupID == txyz / THREADS;
-        //float neighbourValue = _Input[Index(txyz)];
-        //float neighbourValue = inLocal
-          //                         ? sharedData[txyz.x%THREADS][txyz.y%THREADS][txyz.z%THREADS]
-          //                         : _Input[Index(txyz)];
-        float neighbourValue =  _Input[Index(txyz)];
-        //float neighbourValue = .5f;//_Input[Index(txyz)];
-        //float weight = bell(r, rho, omega);
-        float weight = (r <= 1.f) * quad(r); //Used in original python lenia for 3D instead of bell for kenel
-        sum += neighbourValue * weight;
-        total += weight;
-    }
-    //GroupMemoryBarrierWithGroupSync();
-    float avg = sum / total;
+    const uint diam = diameter();
+    const uint MAX = pow(diam, 3);
+    //Kernel is 3-Separable, we calculate the 3 axis separately with apply beetwen them
+    Loop(id, bool3(true, false, false));
+    GroupMemoryBarrierWithGroupSync();
+    Loop(id, bool3(false, true, false));
+    GroupMemoryBarrierWithGroupSync();
+    Loop(id, bool3(false, false, true));
+    GroupMemoryBarrierWithGroupSync();
+    float avg = _Input[Index(id)]; //==sum / total;
     float growth = quadGrowth(avg, mu, sigma) * 2.0f - 1.0f;
     float color = clamp(val + dt * growth, 0.f, 1.f);
-    color = quadGrowth(avg, mu, sigma);
-    //color = sum;
+    color = color;
+    //color = quadGrowth(avg, mu, sigma);
+    //color = (id.x >= 0 && id.y >= 0 && id.z >= 0 && id.x < diam && id.y < diam && id.z < diam)
+    //            ? _kernel[KernelIndex(id-((int3)_Radius))]
+    //            : 0.f;
     uint3 center = id;
     _Output[Index(id)] = color;
     //Debugging the quad kernel function "range"
