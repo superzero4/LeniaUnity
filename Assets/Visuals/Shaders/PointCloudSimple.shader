@@ -3,22 +3,22 @@ Shader "PointCloud/PointCloudSimple"
     Properties
     {
         _Tint("Tint", Color) = (1, 1, 1, 1)
-        _PointSize("Point Size", Float) = 0.05
+        _PointSize("Point Size", Float) = 0.01
     }
     SubShader
     {
         Tags
         {
             "Queue" = "Transparent"
-            "RenderType"="Transparent"
+            "RenderType" = "Transparent"
         }
         Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
-        //Cull False
+        
         Pass
         {
             CGPROGRAM
-            #define SQUARE_GEOMETRY 0
+            #define SQUARE_GEOMETRY 1
             #pragma vertex vert
             #pragma fragment frag
             #pragma geometry geom
@@ -33,7 +33,6 @@ Shader "PointCloud/PointCloudSimple"
             {
                 float4 pos : SV_Position;
                 float4 color : COLOR;
-                float pointSize : PSIZE;
             };
 
             StructuredBuffer<float> _PointBuffer;
@@ -60,15 +59,12 @@ Shader "PointCloud/PointCloudSimple"
                 //    ((life / _Width) % _Height) * _Size / float(_Height),
                 //    (life/ (_Width * _Height)) * _Size / float(_Depth)
                 //);
-                o.pos =
-                    UnityObjectToClipPos(
-                        float4(position, 1.0)
-                    );
+                o.pos = UnityObjectToClipPos(float4(position, 1.0));
                 //mul(
                 //_Transform,
                 //);
                 
-                o.pointSize = _PointSize;
+                // o.pointSize = _PointSize;
 
                 float4 color;
                 const float fadedThreshold = 0.05;
@@ -94,8 +90,8 @@ Shader "PointCloud/PointCloudSimple"
                     //same as dead alpha on the threshold but ramping toward 0, espcially 0 on 0, for visilibity
                     color.a = max(0.0, life / fadedThreshold * dead.a);
                 }
-                //Display the UVW for debug :
-                //color = float4(positionLife,1);
+                // Display the UVW for debug :
+                // color = float4(positionLife,1);
                 o.color = color * _Tint;
                 return o;
             }
@@ -103,58 +99,28 @@ Shader "PointCloud/PointCloudSimple"
             [maxvertexcount(8)]
             void geom(point v2f input[1], inout TriangleStream<v2f> triStream)
             {
-                v2f o;
-                o.pointSize = input[0].pointSize;
-                float4 pos = input[0].pos;
-                float4 color = input[0].color;
+                float aspect = _ScreenParams.x / _ScreenParams.y;
+                float xl = _PointSize;
+                float yl = _PointSize * aspect;
 
-                // Define the vertices of the cube
-                float3 offsets[8] = {
-                    float3(-1, -1, -1),
-                    float3(1, -1, -1),
-                    float3(-1, 1, -1),
-                    float3(1, 1, -1),
-                    float3(-1, -1, 1),
-                    float3(1, -1, 1),
-                    float3(-1, 1, 1),
-                    float3(1, 1, 1)
-                };
+                // create square
+                v2f p11, p12, p13, p21;
 
-                float4 vertices[8];
-                for (int i = 0; i < 8; i++)
-                {
-                    vertices[i] =
-                        //mul(_Transform,
-                        pos + float4(offsets[i] * _PointSize, 0)
-                        //)
-                        ;
-                }
+                p11.color = p12.color = p13.color = p21.color = input[0].color;
+                //p11.pointSize = p12.pointSize = p13.pointSize = p21.pointSize = p22.pointSize = p23.pointSize = input[0].color;
 
-                // Define the indices for the 12 triangles that make up the cube
-                int3 indices[12] = {
-                    int3(0, 1, 2), int3(1, 3, 2), // Front face
-                    int3(4, 5, 6), int3(5, 7, 6), // Back face
-                    int3(0, 1, 4), int3(1, 5, 4), // Bottom face
-                    int3(2, 3, 6), int3(3, 7, 6), // Top face
-                    int3(0, 2, 4), int3(2, 6, 4), // Left face
-                    int3(1, 3, 5), int3(3, 7, 5) // Right face
-                };
+                p11.pos = float4(input[0].pos.x - xl, input[0].pos.y - yl, input[0].pos.z, input[0].pos.w);
+                p12.pos = float4(input[0].pos.x + xl, input[0].pos.y - yl, input[0].pos.z, input[0].pos.w);
+                p13.pos = float4(input[0].pos.x - xl, input[0].pos.y + yl, input[0].pos.z, input[0].pos.w);
+                p21.pos = float4(input[0].pos.x + xl, input[0].pos.y + yl, input[0].pos.z, input[0].pos.w);
 
-                // Generate the triangles for the cube
-                for (int i = 0; i < 12; i++)
-                {
-                    o.pos = vertices[indices[i].x];
-                    o.color = color;
-                    triStream.Append(o);
-
-                    o.pos = vertices[indices[i].y];
-                    o.color = color;
-                    triStream.Append(o);
-
-                    o.pos = vertices[indices[i].z];
-                    o.color = color;
-                    triStream.Append(o);
-                }
+                triStream.Append(p11);
+                triStream.Append(p12);
+                triStream.Append(p13);
+                
+                triStream.Append(p21);
+                triStream.Append(p13);
+                triStream.Append(p12);
             }
             #else
             [maxvertexcount(36)]
