@@ -18,7 +18,7 @@ Shader "PointCloud/PointCloudSimple"
         Pass
         {
             CGPROGRAM
-            #define SQUARE_GEOMETRY 1
+            #define SQUARE_GEOMETRY 0
             #pragma vertex vert
             #pragma fragment frag
             #pragma geometry geom
@@ -125,12 +125,16 @@ Shader "PointCloud/PointCloudSimple"
             [maxvertexcount(36)]
             void geom(point v2f input[1], inout TriangleStream<v2f> triStream)
             {
+                if (input[0].color.a <= fadedThreshold)
+                {
+                    return;
+                }
+                
                 float4 origin = input[0].pos;
                 float2 extent = abs(UNITY_MATRIX_P._11_22 * _PointSize);
                 
                 // Copy the basic information.
                 v2f o;
-                o.pointSize = input[0].pointSize;
                 o.color = input[0].color;
                 o.pos = origin;
                 triStream.Append(o);
