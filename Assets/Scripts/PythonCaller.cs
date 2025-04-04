@@ -118,7 +118,7 @@ namespace DefaultNamespace
                 while (!(_cancel.IsCancellationRequested || (endCondition != null && endCondition.Invoke())))
                 {
                     int val = await stream.ReadBlockAsync(buffer, 0, buffer.Length);
-                    Debug.Log($"One {_readBuffer / 1024} KBytes Block read from reader");
+                    //Debug.Log($"One {_readBuffer / 1024} KBytes Block read from reader");
                     if (val > 0)
                     {
                         onOutput?.Invoke(new string(buffer, 0, val));

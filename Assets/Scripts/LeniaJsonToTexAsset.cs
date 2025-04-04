@@ -11,6 +11,7 @@ public class LeniaJsonToTexAsset : MonoBehaviour
 {
     [Header("Run settings")] private bool _cancel;
     [SerializeField] private Texture3DSO _textureSO;
+    [SerializeField] private TextureSettings _settings;
 
     [SerializeField] private string _path;
 
@@ -29,13 +30,20 @@ public class LeniaJsonToTexAsset : MonoBehaviour
         if (_running == null)
         {
             _toker = new CancellationTokenSource();
-            parser.Init(new TextureSettings(TextureFormat.RFloat, 1, 64), 1);
+            parser.Init(_settings, -1, 1);
             var streamReader = new StreamReader(File.OpenRead(_path));
             FindObjectsByType<PythonCaller>(FindObjectsSortMode.None)[0].ReadOutput(
                 streamReader, _toker, () => streamReader.EndOfStream, s =>
                 {
-                    parser.NewBlock(s);
-                    Debug.Log(parser.Lenia.DimensionsString);
+                    parser.NewBlock(s, out Texture3D texture);
+                    if (texture != null)
+                    {
+                        _textureSO.Save(texture,
+                            "FromJson-Pix" + _settings.pixelSize + "-" +
+                            _settings.format.ToString());
+                        _toker.Cancel();
+                    }
+                    //Debug.Log("Dims : " + parser.Lenia.DimensionsString);
                 });
         }
         else

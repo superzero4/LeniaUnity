@@ -22,6 +22,7 @@ public class Texture3DSO : ScriptableObject
             AssetDatabase.DeleteAsset(p);
         AssetDatabase.CreateAsset(_texture, p);
         AssetDatabase.SaveAssets();
+        Debug.LogWarning("Saved texture to " + p);
         #endif
     }
     [Button("Save")]

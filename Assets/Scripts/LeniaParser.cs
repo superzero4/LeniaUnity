@@ -18,16 +18,19 @@ public class LeniaParser
     public Lenia3D Lenia => lenia;
     StringBuilder nbBuffer = new StringBuilder();
     private int firstDepth;
+    private int genParsed;
+    private int maxGenParsed;
 
-    public void Init(TextureSettings settings, int firstDepth)
+    public void Init(TextureSettings settings, int firstDepth, int maxGenParsed = 1000)
     {
-        firstDepth = 0;
+        this.maxGenParsed = maxGenParsed;
+        genParsed = 0;
         this._settings = settings;
         step = -1;
-        lenia = new();
         //First generation
         depth = firstDepth;
         this.firstDepth = firstDepth;
+        lenia = new();
         if (firstDepth >= 1)
             lenia.generations.Add(new(_settings.size.x));
         formatInfo = new NumberFormatInfo();
@@ -47,6 +50,11 @@ public class LeniaParser
     /// <param name="texture">Not null only if we succesfully parsed a full generation</param>
     public void NewBlock(string block, [CanBeNull] out Texture3D texture)
     {
+        if (genParsed >= maxGenParsed)
+        {
+            texture = null;   
+            return;
+        }
         //Debug.Log("New block in parser : " + block);
         texture = null;
         string filtered = "";
@@ -70,6 +78,9 @@ public class LeniaParser
                         case 3:
                             lenia.generations[^1][^1].Add(new(_settings.size.z));
                             break;
+                        case 4:
+                            Debug.Log("Depth 4, doing nothing");
+                            break;
                     }
 
                     break;
@@ -78,10 +89,11 @@ public class LeniaParser
                     if (character == ']')
                     {
                         depth--;
-                        if (depth == firstDepth)
+                        if (depth == firstDepth + 1)
                         {
                             texture = SetTexture(step);
                             Debug.LogWarning("Parsed one generation");
+                            genParsed++;
                         }
                         //We closed a generation
                     }
@@ -122,7 +134,7 @@ public class LeniaParser
         //Assert.IsTrue(total % _pixelSize == 0);
         var texture = new Texture3D(_settings.size.x, _settings.size.y, pixelCount,
             _format, false);
-        Debug.LogWarning("Texture start");
+        Debug.LogWarning("Texture start on "+lenia.DimensionsString);
         for (int x = 0; x < _settings.size.x; x++)
         {
             for (int y = 0; y < _settings.size.y; y++)
@@ -160,7 +172,6 @@ public class LeniaParser
                 }
             }
         }
-
         texture.Apply();
         return texture;
     }
