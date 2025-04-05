@@ -47,16 +47,20 @@ public class ComputeShaderHandler : MonoBehaviour
     private ComputeBuffer _buffer1; //Init state
     private ComputeBuffer _buffer2; //Convol in/out & Lenia out
     private ComputeBuffer _buffer3; //Convol in/out intermediate without altering init state
+    private ComputeBuffer _floatBuffer;
     private ComputeBuffer _kernel;
 
     private static readonly int Input = Shader.PropertyToID("_Input");
     private static readonly int Midput = Shader.PropertyToID("_MidPut");
     private static readonly int Output = Shader.PropertyToID("_Output");
+    private static readonly int FloatOutput = Shader.PropertyToID("_OutputF");
     private static readonly int Radius = Shader.PropertyToID("_Radius");
     private static readonly int ResX = Shader.PropertyToID("ResX");
     private static readonly int ResY = Shader.PropertyToID("ResY");
     private static readonly int ResZ = Shader.PropertyToID("ResZ");
+
     private static readonly int Time = Shader.PropertyToID("_Time");
+
     //private static readonly int Mouse = Shader.PropertyToID("mouse");
     //private static readonly int dt = Shader.PropertyToID("dt");
     //private static readonly int mu = Shader.PropertyToID("mu");
@@ -68,23 +72,22 @@ public class ComputeShaderHandler : MonoBehaviour
     private const int NoiseKernel = 1;
     private const int ConvolutionKernel = 2;
     private const int CopyKernel = 3;
+    private const int CopyToFloatKernel = 4;
 
-    public ComputeBuffer ReadBuffer => !buffer1isWrite ? _buffer3 : _buffer2;
-    public ComputeBuffer WriteBuffer => buffer1isWrite ? _buffer3 : _buffer2;
+    public ComputeBuffer ReadBuffer => _floatBuffer;
 
     public Vector3Int Size => _size;
-    private bool buffer1isWrite;
 
     private void Dispatch(int kernelIndex)
     {
-        int factor = 2; //Should be equal, for each dimension, to the numThreads values in the shader
+        int factor = 8; //Should be equal, for each dimension, to the numThreads values in the shader
         int x = Mathf.Max(1, _size.x / factor);
         int y = Mathf.Max(1, _size.y / factor);
         int z = Mathf.Max(1, _size.z / factor);
         _computeShader.Dispatch(kernelIndex, x, y, z);
     }
 
-    private bool UseNoise => _texture == null;
+    private bool UseNoise => _texture == null && _parser == null;
 
     public int RadiusOfKernel => _radius;
 
@@ -101,7 +104,7 @@ public class ComputeShaderHandler : MonoBehaviour
                 for (int k = 0; k < _size.z; k++)
                 {
                     double value = g[i][j][k];
-                    if (i >= 30 && i <= 34 && j >= 30 && j <= 34 && k >= 30 && k <= 34)
+                    if (false && i >= 30 && i <= 34 && j >= 30 && j <= 34 && k >= 30 && k <= 34)
                         str += $"{value}, ";
                     doubles.Add(value);
                 }
@@ -124,16 +127,20 @@ public class ComputeShaderHandler : MonoBehaviour
         {
             data[i] = colors[i].r;
         }
+
         return data;
     }
 
-    private IEnumerator Routine()
+    private void InitShaders()
     {
         ReleaseBuffers();
         if (!UseNoise)
             _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
         _buffer1 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(double));
         _buffer2 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(double));
+        _floatBuffer = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
+        //Always
+        _computeShader.SetBuffer(CopyToFloatKernel, FloatOutput, _floatBuffer);
         if (!UseNoise)
         {
             double[] tex = InitialValues(_texture);
@@ -148,9 +155,57 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetInt(ResY, _size.y);
         _computeShader.SetInt(ResZ, _size.z);
         _computeShader.SetInt(Radius, _radius);
-        //_computeShader.SetFloat(dt, _timeStep);
-        //_computeShader.SetFloat(mu, _mu);
-        //_computeShader.SetFloat(sigma, _sigma);
+    }
+
+    private IEnumerator Routine()
+    {
+        InitShaders();
+        InitKernel();
+        // Première étape: noise
+        if (UseNoise)
+            Dispatch(NoiseKernel);
+        //Initial state
+        RaiseUpdate(_buffer1);
+        yield return new WaitForSeconds(_delayNoise);
+        RaiseUpdate(_buffer1);
+        // Ensuite, Lenia
+
+        _computeShader.SetVector(Time, Shader.GetGlobalVector(Time));
+        (ComputeBuffer, ComputeBuffer)[] pingPongBuffers = new[]
+        {
+            (_buffer2, _buffer3),
+            (_buffer3, _buffer2),
+            (_buffer2, _buffer3)
+        };
+        var finalResultBuffer = pingPongBuffers[^1].Item1;
+        //We define a ping pong series of buffer for intermediate steps;
+        while (true)
+        {
+            //We copy last generation, to the _buffer1, untouched during intermediate steps
+            Dispatch(CopyKernel, finalResultBuffer, _buffer1, true);
+            yield return new WaitForSeconds(_delayGenerations / 3f);
+            //Kernel is 3-Separable, we calculate the 3 axis separately with apply beetwen them
+            //We ping pong beetween 2 buffers using the buffers specified in the array, the very first buffer contains the result of the last generation, the result of each step will become the input of the the next step
+            for (int i = 0; i < 3; i++)
+            {
+                _computeShader.SetInt(Convolution, i);
+                Dispatch(ConvolutionKernel, Midput, pingPongBuffers[i].Item1, pingPongBuffers[i].Item2,true);
+                yield return new WaitForSeconds(_delayGenerations / 3f);
+            }
+
+            yield return new WaitForSeconds(_delayGenerations / 3f);
+            //For a new generation we need the result of the iterative convolution
+            SetMidBuffer(LeniaKernel, pingPongBuffers[2].Item2);
+            //We need the full untouched last generation info in _buffer1, we output the result in the last not in use buffer
+            Dispatch(LeniaKernel, _buffer1, finalResultBuffer, true);
+            yield return new WaitForSeconds(_delayGenerations / 3f);
+        }
+
+        ReleaseBuffers();
+    }
+
+    private void InitKernel()
+    {
         var diam = 2 * _radius + 1;
         double[][][] kernel = new double[diam][][];
         double norm = 0;
@@ -213,83 +268,50 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetBuffer(ConvolutionKernel, Kernel, _kernel);
         _computeShader.SetBuffer(LeniaKernel, Kernel, _kernel);
         _computeShader.SetFloat(KernelNorm, (float)norm);
-        // Première étape: noise
-        if (UseNoise)
-            Dispatch(NoiseKernel);
-        //Initial state
-        RaiseUpdate(_buffer1);
-        yield return new WaitForSeconds(_delayNoise);
-        RaiseUpdate(_buffer1);
-        // Ensuite, Lenia
-
-        _computeShader.SetVector(Time, Shader.GetGlobalVector(Time));
-        //yield break;
-        buffer1isWrite = false;
-        (ComputeBuffer, ComputeBuffer)[] pingPongBuffers = new[]
-        {
-            (_buffer2, _buffer3),
-            (_buffer3, _buffer2),
-            (_buffer2, _buffer3)
-        };
-        //We define a ping pong series of buffer for intermediate steps;
-        while (true)
-        {
-            //We copy last generation, to the _buffer1, untouched during intermediate steps
-            SetInOutBuffer(CopyKernel, pingPongBuffers[^1].Item1, _buffer1, true);
-            Dispatch(CopyKernel);
-            yield return new WaitForSeconds(_delayGenerations / 3f);
-            //Kernel is 3-Separable, we calculate the 3 axis separately with apply beetwen them
-            //We ping pong beetween 2 buffers using the buffers specified in the array, the very first buffer contains the result of the last generation, the result of each step will become the input of the the next step
-            for (int i = 0; i < 3; i++)
-            {
-                _computeShader.SetInt(Convolution, 2 - i);
-                SetInOutBuffer(ConvolutionKernel, Midput, pingPongBuffers[i].Item1, pingPongBuffers[i].Item2);
-                Dispatch(ConvolutionKernel);
-                yield return new WaitForSeconds(_delayGenerations / 3f);
-            }
-
-            yield return new WaitForSeconds(_delayGenerations / 3f);
-            //For a new generation we need the result of the iterative convolution
-            SetMidBuffer(LeniaKernel, pingPongBuffers[2].Item2);
-            //We need the full untouched last generation info in _buffer1, we output the result in the last not in use buffer
-            SetInOutBuffer(LeniaKernel, _buffer1, pingPongBuffers[2].Item1);
-            Dispatch(LeniaKernel);
-            yield return new WaitForSeconds(_delayGenerations / 3f);
-        }
-
-        ReleaseBuffers();
     }
+
 
     private void ReleaseBuffers()
     {
         _buffer1?.Release();
         _buffer2?.Release();
+        _buffer3?.Release();
+        _floatBuffer?.Release();
         _kernel?.Release();
     }
 
-    private void SetInOutBuffer(int kernel, ComputeBuffer inBuffer, ComputeBuffer outBuffer, bool bindView = false)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="kernel"></param>
+    /// <param name="inBuffer"></param>
+    /// <param name="outBuffer"></param>
+    /// <param name="bindView">True to copy to the float buffer and update the ones who use it</param>
+    private void Dispatch(int kernel, ComputeBuffer inBuffer, ComputeBuffer outBuffer, bool bindView = false)
     {
-        SetInOutBuffer(kernel, Input, inBuffer, outBuffer, bindView);
+        Dispatch(kernel, Input, inBuffer, outBuffer, bindView);
     }
 
-    private void SetInOutBuffer(int kernel, int inputIDOverride, ComputeBuffer inBuffer, ComputeBuffer outBuffer,
+    private void Dispatch(int kernel, int inputIDOverride, ComputeBuffer inBuffer, ComputeBuffer outBuffer,
         bool bindView = false)
     {
+        _computeShader.SetBuffer(kernel, inputIDOverride, inBuffer);
+        _computeShader.SetBuffer(kernel, Output, outBuffer);
+        Dispatch(kernel);
         if (bindView)
         {
             RaiseUpdate(outBuffer);
         }
-
-        _computeShader.SetBuffer(kernel, inputIDOverride, inBuffer);
-        _computeShader.SetBuffer(kernel, Output, outBuffer);
     }
 
-    private void RaiseUpdate(ComputeBuffer outBuffer)
+    private void RaiseUpdate(ComputeBuffer buffer)
     {
+        _computeShader.SetBuffer(CopyToFloatKernel, Input, buffer);
+        Dispatch(CopyToFloatKernel);
         //Debug.Log("Binded");
         //Debug.Break();
-        _computeToVert.Bind(outBuffer);
-        _computeToTex.Bind(outBuffer);
+        _computeToVert.Bind(_floatBuffer);
+        _computeToTex.Bind(_floatBuffer);
     }
 
     private void SetMidBuffer(int kernel, ComputeBuffer midBuffer)
@@ -333,8 +355,7 @@ public class ComputeShaderHandler : MonoBehaviour
             EditorCoroutineUtility.StopCoroutine(_routine);
         }
 #endif
-        _buffer1?.Release();
-        _buffer2?.Release();
+        ReleaseBuffers();
     }
 
     void Start()

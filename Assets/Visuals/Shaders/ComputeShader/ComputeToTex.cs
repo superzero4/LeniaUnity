@@ -29,6 +29,7 @@ namespace Visuals.Shaders.ComputeShader
         [Button]
         private void UpdateTexture()
         {
+            return;
             if (lastData == null)
                 return;
             if(colorMap == null)
@@ -64,6 +65,7 @@ namespace Visuals.Shaders.ComputeShader
             for (int i = 0; i < sliceSize; i++)
             {
                 float sum = 0;
+                
                 for (int z = 0; z < zMax; z++)
                 {
                     float zRatio = Zs[z] / sumZ / 3;
@@ -79,6 +81,7 @@ namespace Visuals.Shaders.ComputeShader
                         max = value;
                 }
                 sums[i] = sum/zMax;
+                //sums[i] = lastData[_displayedSlice * sliceOffset + i];
             }
 
             for (int i = 0; i < sliceSize; i++)
@@ -115,6 +118,7 @@ namespace Visuals.Shaders.ComputeShader
             while (true)
             {
                 Increment();
+                //UpdateTexture();
                 if (_incrementDelay > 0)
                     yield return new WaitForSeconds(_incrementDelay);
                 else

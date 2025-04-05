@@ -2,11 +2,13 @@
 #pragma kernel NoiseMain
 #pragma kernel ConvolMain
 #pragma kernel CopyToOutput
-#define THREADS_NUMBER 2
+#pragma kernel CopyToFloat
+#define THREADS_NUMBER 8
 #include <HLSLSupport.cginc>
 StructuredBuffer<double> _Input;
 StructuredBuffer<double> _MidPut;
 RWStructuredBuffer<double> _Output;
+RWStructuredBuffer<float> _OutputF;
 StructuredBuffer<double> _kernel;
 
 // #region Common
@@ -103,6 +105,12 @@ void CopyToOutput(uint3 id : SV_DispatchThreadID) //kernel 3
     uint index = Index(id);
     _Output[index] = _Input[index];
 }
+[numthreads(THREADS_NUMBER,THREADS_NUMBER,THREADS_NUMBER)]
+void CopyToFloat(uint3 id : SV_DispatchThreadID) //kernel 4
+{
+    uint index = Index(id);
+    _OutputF[index] = _Input[index];
+}
 
 [numthreads(THREADS_NUMBER,THREADS_NUMBER,THREADS_NUMBER)]
 void CSMain(uint3 id : SV_DispatchThreadID) // Kernel 0
@@ -125,8 +133,8 @@ void CSMain(uint3 id : SV_DispatchThreadID) // Kernel 0
     //color = (id.x < diam && id.y < diam && id.z < diam && (id.x == _Radius || id.y == _Radius || id.z == _Radius))
     //            ? _kernel[KernelIndex(id - ((int3)_Radius))]
     //            : 0.f;
-    //color = (id.x == (32 / 2) || id.y == (32 / 2) || id.z == (32 / 2))
-    //            ? 1
+    //color = (id.x == (ResX / 2) || id.y == (ResY/2) || id.z == (ResZ / 2))
+    //            ? id.x
     //            : 0.f;
     _Output[Index(id)] = color;
 
