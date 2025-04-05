@@ -45,13 +45,7 @@ inline uint KernelIndex(int3 id)
 // #endregion
 // #region Input
 
-inline double bell(double x, double m, double s)
-{
-    //exp(-(x-m)^2/(2s^2))
-    return exp(-((x - m) * (x - m)) / (s * s * 2.)); // bell-shaped curve
-}
-
-inline double quadGrowth(double n, double m, double s)
+inline unorm float quadGrowth(unorm float n, unorm float m, unorm float s)
 {
     //  np.maximum(0, 1 - (n-m)**2 / (9 * s**2) )**4
     return pow(max(0, 1 - pow(n - m, 2) / (9 * s * s)), 4);
@@ -105,6 +99,7 @@ void CopyToOutput(uint3 id : SV_DispatchThreadID) //kernel 3
     uint index = Index(id);
     _Output[index] = _Input[index];
 }
+
 [numthreads(THREADS_NUMBER,THREADS_NUMBER,THREADS_NUMBER)]
 void CopyToFloat(uint3 id : SV_DispatchThreadID) //kernel 4
 {
@@ -123,8 +118,10 @@ void CSMain(uint3 id : SV_DispatchThreadID) // Kernel 0
     double sigma = 0.01;
     double dt = 0.1;
     double growth = quadGrowth(avg, mu, sigma) * 2.0 - 1.0;
+    unorm float growth = quadGrowth(avg, mu, sigma) * 2.0 - 1.0;
     double color = clamp(val + dt * growth, 0.0, 1.0);
-    const uint diam = diameter();
+    color = color;
+    //const uint diam = diameter();
     //Debug Kernel :
     //color = (id.x < diam && id.y < diam && id.z < diam)
     //            ? _kernel[KernelIndex(id-((int3)_Radius))]
