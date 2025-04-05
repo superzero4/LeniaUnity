@@ -57,10 +57,10 @@ public class ComputeShaderHandler : MonoBehaviour
     private static readonly int ResY = Shader.PropertyToID("ResY");
     private static readonly int ResZ = Shader.PropertyToID("ResZ");
     private static readonly int Time = Shader.PropertyToID("_Time");
-    private static readonly int Mouse = Shader.PropertyToID("mouse");
-    private static readonly int dt = Shader.PropertyToID("dt");
-    private static readonly int mu = Shader.PropertyToID("mu");
-    private static readonly int sigma = Shader.PropertyToID("sigma");
+    //private static readonly int Mouse = Shader.PropertyToID("mouse");
+    //private static readonly int dt = Shader.PropertyToID("dt");
+    //private static readonly int mu = Shader.PropertyToID("mu");
+    //private static readonly int sigma = Shader.PropertyToID("sigma");
     private static readonly int Kernel = Shader.PropertyToID("_kernel");
     private static readonly int KernelNorm = Shader.PropertyToID("kernelNorm");
     private static readonly int Convolution = Shader.PropertyToID("convolDim");
@@ -77,7 +77,7 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private void Dispatch(int kernelIndex)
     {
-        int factor = 8; //Should be equal, for each dimension, to the numThreads values in the shader
+        int factor = 2; //Should be equal, for each dimension, to the numThreads values in the shader
         int x = Mathf.Max(1, _size.x / factor);
         int y = Mathf.Max(1, _size.y / factor);
         int z = Mathf.Max(1, _size.z / factor);
@@ -92,13 +92,13 @@ public class ComputeShaderHandler : MonoBehaviour
     {
         List<double> doubles = new List<double>();
         var g = _parser.Parser.Lenia.generations[0];
-        for (var i = 0; i < _size.x; i++)
+        for (int i = 0; i < _size.x; i++)
         {
             string str = "";
-            for (var j = 0; j < _size.y; j++)
+            for (int j = 0; j < _size.y; j++)
             {
                 str = "";
-                for (var k = 0; k < _size.z; k++)
+                for (int k = 0; k < _size.z; k++)
                 {
                     double value = g[i][j][k];
                     if (i >= 30 && i <= 34 && j >= 30 && j <= 34 && k >= 30 && k <= 34)
@@ -117,7 +117,7 @@ public class ComputeShaderHandler : MonoBehaviour
             }
         }
 
-        return doubles.ToArray();
+        //return doubles.ToArray();
         double[] data = new double[texture.width * texture.height * texture.depth];
         var colors = texture.GetPixels();
         for (int i = 0; i < colors.Length; i++)
@@ -148,9 +148,9 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetInt(ResY, _size.y);
         _computeShader.SetInt(ResZ, _size.z);
         _computeShader.SetInt(Radius, _radius);
-        _computeShader.SetFloat(dt, _timeStep);
-        _computeShader.SetFloat(mu, _mu);
-        _computeShader.SetFloat(sigma, _sigma);
+        //_computeShader.SetFloat(dt, _timeStep);
+        //_computeShader.SetFloat(mu, _mu);
+        //_computeShader.SetFloat(sigma, _sigma);
         var diam = 2 * _radius + 1;
         double[][][] kernel = new double[diam][][];
         double norm = 0;
@@ -211,6 +211,7 @@ public class ComputeShaderHandler : MonoBehaviour
         _kernel = new ComputeBuffer(flat.Length, sizeof(double));
         _kernel.SetData(flat);
         _computeShader.SetBuffer(ConvolutionKernel, Kernel, _kernel);
+        _computeShader.SetBuffer(LeniaKernel, Kernel, _kernel);
         _computeShader.SetFloat(KernelNorm, (float)norm);
         // Première étape: noise
         if (UseNoise)

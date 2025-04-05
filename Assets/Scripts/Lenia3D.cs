@@ -106,7 +106,6 @@ public class Lenia3D
 
         public double this[Index offset]
         {
-            //TODO
             get => cells[offset.IsFromEnd ? index - offset.Value : offset.Value];
         }
         //public float this[Index offset]

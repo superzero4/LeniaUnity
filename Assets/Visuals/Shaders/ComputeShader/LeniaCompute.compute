@@ -2,7 +2,7 @@
 #pragma kernel NoiseMain
 #pragma kernel ConvolMain
 #pragma kernel CopyToOutput
-#define THREADS_NUMBER 8
+#define THREADS_NUMBER 2
 #include <HLSLSupport.cginc>
 StructuredBuffer<double> _Input;
 StructuredBuffer<double> _MidPut;
@@ -109,26 +109,28 @@ void CSMain(uint3 id : SV_DispatchThreadID) // Kernel 0
 {
     //Last val
     double val = _Input[Index(id)];
-    
+
     double avg = _MidPut[Index(id)]; //the cumulated result of all convolutions
     double mu = 0.12;
     double sigma = 0.01;
     double dt = 0.1;
     double growth = quadGrowth(avg, mu, sigma) * 2.0 - 1.0;
-    double color = clamp(val + dt * growth, 0., 1.);
-    _Output[Index(id)] = color;
-    
-    //const uint diam = diameter();
-    //color = quadGrowth(avg, mu, sigma);
+    double color = clamp(val + dt * growth, 0.0, 1.0);
+    const uint diam = diameter();
     //Debug Kernel :
-    //color = (id.x >= 0 && id.y >= 0 && id.z >= 0 && id.x < diam && id.y < diam && id.z < diam)
+    //color = (id.x < diam && id.y < diam && id.z < diam)
     //            ? _kernel[KernelIndex(id-((int3)_Radius))]
     //            : 0.f;
     //Debug Kernel center lines (the one we use for 3X1D convolution)
     //color = (id.x < diam && id.y < diam && id.z < diam && (id.x == _Radius || id.y == _Radius || id.z == _Radius))
     //            ? _kernel[KernelIndex(id - ((int3)_Radius))]
     //            : 0.f;
-    //_Output[Index(id)] = color;
+    //color = (id.x == (32 / 2) || id.y == (32 / 2) || id.z == (32 / 2))
+    //            ? 1
+    //            : 0.f;
+    _Output[Index(id)] = color;
+
+    //color = quadGrowth(avg, mu, sigma);
     //Debugging the quad kernel function "range"
     //color = quad(sqrt(float(center.x * center.x + center.y * center.y + center.z * center.z)) / _Radius);
     //avg =  .10f;

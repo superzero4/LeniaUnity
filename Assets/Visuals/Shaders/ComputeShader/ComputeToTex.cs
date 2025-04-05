@@ -29,9 +29,10 @@ namespace Visuals.Shaders.ComputeShader
         [Button]
         private void UpdateTexture()
         {
-            return;
             if (lastData == null)
                 return;
+            if(colorMap == null)
+                InitColorMap();
             if (_texture == null || _texture.width != _compute.Size.x || _texture.height != _compute.Size.y ||
                 _texture.format != TextureFormat.RGBA32 || _texture.filterMode != _filterMode)
             {
@@ -107,11 +108,7 @@ namespace Visuals.Shaders.ComputeShader
 
         private IEnumerator Start()
         {
-            colorMap = new Color32[256];
-            for (int i = 0; i < 255; i++)
-            {
-                colorMap[i] = new Color32(map[i * 3], map[i * 3 + 1], map[i * 3 + 2], 1);
-            }
+            InitColorMap();
 
             yield return new WaitUntil(() => _compute.ReadBuffer != null);
             yield return new WaitForEndOfFrame();
@@ -122,6 +119,15 @@ namespace Visuals.Shaders.ComputeShader
                     yield return new WaitForSeconds(_incrementDelay);
                 else
                     yield return new WaitUntil(() => _incrementDelay > 0);
+            }
+        }
+
+        private void InitColorMap()
+        {
+            colorMap = new Color32[256];
+            for (int i = 0; i < 255; i++)
+            {
+                colorMap[i] = new Color32(map[i * 3], map[i * 3 + 1], map[i * 3 + 2], 1);
             }
         }
 
