@@ -111,8 +111,8 @@ void CSMain(uint3 id : SV_DispatchThreadID) // Kernel 0
     double val = _Input[Index(id)];
     
     double avg = _MidPut[Index(id)]; //the cumulated result of all convolutions
-    double sigma = 0.01;
     double mu = 0.12;
+    double sigma = 0.01;
     double dt = 0.1;
     double growth = quadGrowth(avg, mu, sigma) * 2.0 - 1.0;
     double color = clamp(val + dt * growth, 0., 1.);
