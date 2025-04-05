@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7680bd26333442eaa67baeb5f0f424ba, type: 3}
   m_Name: Texture3D
   m_EditorClassIdentifier: 
-  _texture: {fileID: 11700000, guid: e229ad684bd2f7344a3b868359f557f3, type: 2}
+  _texture: {fileID: 11700000, guid: 021c166c2f948b84aa8829d5a4a00210, type: 2}
   _texturePath: Assets/Visuals/Textures/Init/test

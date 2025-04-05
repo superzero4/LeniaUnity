@@ -24,6 +24,8 @@ public class LeniaJsonToTexAsset : MonoBehaviour
     private CancellationTokenSource _toker;
     [SerializeField] LeniaParser parser = new();
 
+    public LeniaParser Parser => parser;
+
     [Button("Process the file at _path into 3DTextures")]
     private void Run()
     {

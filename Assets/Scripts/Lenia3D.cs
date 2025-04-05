@@ -77,12 +77,12 @@ public class Lenia3D
     [Serializable]
     public class Row
     {
-        [SerializeField] public float[] cells;
+        [SerializeField] public double[] cells;
         [SerializeField, Label("Count")] private int index;
 
         public Row(int size)
         {
-            cells = new float[size];
+            cells = new double[size];
             for (int i = 0; i < size; i++)
             {
                 cells[i] = -2;
@@ -98,11 +98,21 @@ public class Lenia3D
             cells[index] = value;
             index++;
         }
+        public void Add(double value)
+        {
+            cells[index] = value;
+            index++;
+        }
 
         public float this[Index offset]
         {
-            get => cells[offset.IsFromEnd ? index - offset.Value : offset.Value];
+            //TODO
+            get => (float)cells[offset.IsFromEnd ? index - offset.Value : offset.Value];
         }
+        //public float this[Index offset]
+        //{
+        //    get => cells[offset.IsFromEnd ? index - offset.Value : offset.Value];
+        //}
     }
 
     public string DimensionsString => "["+(generations != null ? generations.Count.ToString() : "0") +" "+(generations!= null && generations.Count > 0 ? generations[^1].Count.ToString() : "0") + " "+(generations!= null && generations.Count > 0&& generations[^1].Count > 0 ? generations[^1][^1].Count.ToString() : "0")+" "+(generations!= null && generations.Count > 0 && generations[^1].Count > 0 &&  generations[^1][^1].Count>0 ? generations[^1][^1][^1].Count.ToString() : "0")+"]";

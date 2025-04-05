@@ -58,7 +58,7 @@ public class LeniaParser
         //Debug.Log("New block in parser : " + block);
         texture = null;
         string filtered = "";
-        float value;
+        double value;
         foreach (var character in block)
         {
             switch (character)
@@ -101,7 +101,7 @@ public class LeniaParser
                     if (nbBuffer.Length > 0)
                     {
                         filtered = nbBuffer.ToString();
-                        if (float.TryParse(filtered, NumberStyles.Any, formatInfo, out value))
+                        if (double.TryParse(filtered, NumberStyles.Any, formatInfo, out value))
                             lenia.generations[^1][^1][^1].Add(value);
                         else if (filtered.ToLower().Contains("nan".ToLower()))
                             lenia.generations[^1][^1][^1].Add(-1f);

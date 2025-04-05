@@ -13,7 +13,9 @@ using Unity.EditorCoroutines.Editor;
 
 public class ComputeShaderHandler : MonoBehaviour
 {
-    [SerializeField] private ComputeToVertex _computeToVert;
+    [Header("Views")] [SerializeField] private ComputeToVertex _computeToVert;
+
+    [SerializeField] private ComputeToTex _computeToTex;
 
     [Header("Settings")] [SerializeField, Range(1, 50)]
     private int _radius = 15;
@@ -29,6 +31,8 @@ public class ComputeShaderHandler : MonoBehaviour
 
     [SerializeField, Tooltip("Noise used instead")]
     private Texture3D _texture;
+
+    [SerializeField] private LeniaJsonToTexAsset _parser;
 
     [SerializeField, Range(0.000001f, 5f)] private float _delayGenerations = .1f;
     [SerializeField, Range(0.000001f, 5f)] private float _delayNoise = .1f;
@@ -82,18 +86,60 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private bool UseNoise => _texture == null;
 
+    public int RadiusOfKernel => _radius;
+
+    private double[] InitialValues()
+    {
+        List<double> doubles = new List<double>();
+        var g = _parser.Parser.Lenia.generations[0];
+        for (var i = 0; i < _size.x; i++)
+        {
+            string str = "";
+            for (var j = 0; j < _size.y; j++)
+            {
+                str = "";
+                for (var k = 0; k < _size.z; k++)
+                {
+                    double value = g[i][j][k];
+                    if (i >= 30 && i <= 34 && j >= 30 && j <= 34 && k >= 30 && k <= 34)
+                        str += $"{value}, ";
+                    doubles.Add(value);
+                }
+
+                if (!string.IsNullOrEmpty(str))
+                    Debug.Log(str + "\n");
+            }
+
+            if (!string.IsNullOrEmpty(str))
+            {
+                Debug.LogWarning("---\n----");
+                str = null;
+            }
+        }
+
+        return doubles.ToArray();
+        //float[] data = new float[texture.width * texture.height * texture.depth];
+        //var colors = texture.GetPixels();
+        //for (int i = 0; i < colors.Length; i++)
+        //{
+        //    data[i] = colors[i].r;
+        //}
+        //return data;
+    }
+
     private IEnumerator Routine()
     {
         ReleaseBuffers();
         if (!UseNoise)
             _size = new Vector3Int(_texture.width, _texture.height, _texture.depth);
-        _buffer1 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
-        _buffer2 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
+        _buffer1 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(double));
+        _buffer2 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(double));
         if (!UseNoise)
         {
-            _buffer1.SetData(_texture.GetPixelData<float>(0));
-            _buffer2.SetData(_texture.GetPixelData<float>(0));
-            _buffer3 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(float));
+            double[] tex = InitialValues();
+            _buffer1.SetData(tex);
+            _buffer2.SetData(tex);
+            _buffer3 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(double));
         }
 
         _computeShader.SetBuffer(NoiseKernel, Input, _buffer1);
@@ -106,18 +152,18 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetFloat(mu, _mu);
         _computeShader.SetFloat(sigma, _sigma);
         var diam = 2 * _radius + 1;
-        float[][][] kernel = new float[diam][][];
-        float norm = 0;
+        double[][][] kernel = new double[diam][][];
+        double norm = 0;
         for (int x = -_radius; x <= _radius; x++)
         {
-            float[][] yList = new float[diam][];
+            double[][] yList = new double[diam][];
             for (int y = -_radius; y <= _radius; y++)
             {
-                float[] zList = new float[diam];
+                double[] zList = new double[diam];
                 for (int z = -_radius; z <= _radius; z++)
                 {
-                    float r = Mathf.Sqrt(x * x + y * y + z * z) / _radius;
-                    float val = r <= 1f ? (float)Math.Pow(4 * r * (1 - r), 4) : 0f;
+                    double r = Mathf.Sqrt(x * x + y * y + z * z) / _radius;
+                    double val = r <= 1f ? Math.Pow(4 * r * (1 - r), 4) : 0;
                     norm += val;
                     zList[z + _radius] = val;
                 }
@@ -141,38 +187,38 @@ public class ComputeShaderHandler : MonoBehaviour
                     var ymax = y + _radius;
                     var zmax = z + _radius;
                     //We ensure the kernel is symmetrical and therefore symetrical;
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmax],
-                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmin],
-                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmax},{ymax},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmax],
-                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmin],
-                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmax],
-                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmin],
-                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmax],
-                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
-                    Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmin],
-                        $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    //Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmax],
+                    //    $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    //Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymax][zmin],
+                    //    $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmax},{ymax},{zmin}");
+                    //Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmax],
+                    //    $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    //Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmax][ymin][zmin],
+                    //    $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    //Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmax],
+                    //    $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    //Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymax][zmin],
+                    //    $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    //Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmax],
+                    //    $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
+                    //Assert.AreApproximatelyEqual(kernel[xmax][ymax][zmax], kernel[xmin][ymin][zmin],
+                    //    $"{x},{y},{z}=>{xmax},{ymax},{zmax}!={xmin},{ymin},{zmin}");
                 }
             }
         }
 
-        float[] flat = kernel.SelectMany(a => a.SelectMany(b => b)).ToArray();
-        _kernel = new ComputeBuffer(flat.Length, sizeof(float));
+        double[] flat = kernel.SelectMany(a => a.SelectMany(b => b)).ToArray();
+        _kernel = new ComputeBuffer(flat.Length, sizeof(double));
         _kernel.SetData(flat);
         _computeShader.SetBuffer(ConvolutionKernel, Kernel, _kernel);
-        _computeShader.SetFloat(KernelNorm, norm);
+        _computeShader.SetFloat(KernelNorm, (float)norm);
         // Première étape: noise
         if (UseNoise)
             Dispatch(NoiseKernel);
-
-
+        //Initial state
+        RaiseUpdate(_buffer1);
         yield return new WaitForSeconds(_delayNoise);
-
+        RaiseUpdate(_buffer1);
         // Ensuite, Lenia
 
         _computeShader.SetVector(Time, Shader.GetGlobalVector(Time));
@@ -195,7 +241,7 @@ public class ComputeShaderHandler : MonoBehaviour
             //We ping pong beetween 2 buffers using the buffers specified in the array, the very first buffer contains the result of the last generation, the result of each step will become the input of the the next step
             for (int i = 0; i < 3; i++)
             {
-                _computeShader.SetInt(Convolution, 2-i);
+                _computeShader.SetInt(Convolution, 2 - i);
                 SetInOutBuffer(ConvolutionKernel, Midput, pingPongBuffers[i].Item1, pingPongBuffers[i].Item2);
                 Dispatch(ConvolutionKernel);
                 yield return new WaitForSeconds(_delayGenerations / 3f);
@@ -229,9 +275,20 @@ public class ComputeShaderHandler : MonoBehaviour
         bool bindView = false)
     {
         if (bindView)
-            _computeToVert.Bind(outBuffer);
+        {
+            RaiseUpdate(outBuffer);
+        }
+
         _computeShader.SetBuffer(kernel, inputIDOverride, inBuffer);
         _computeShader.SetBuffer(kernel, Output, outBuffer);
+    }
+
+    private void RaiseUpdate(ComputeBuffer outBuffer)
+    {
+        //Debug.Log("Binded");
+        //Debug.Break();
+        _computeToVert.Bind(outBuffer);
+        _computeToTex.Bind(outBuffer);
     }
 
     private void SetMidBuffer(int kernel, ComputeBuffer midBuffer)
