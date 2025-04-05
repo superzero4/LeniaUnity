@@ -6,6 +6,7 @@ public class PointCloudRendererSimple : MonoBehaviour
     [SerializeField] private Shader pointShader;
     [SerializeField] private Color pointTint = Color.white;
     [SerializeField, Range(0.00001f, 10f)] public float pointSize = 0.05f;
+    [SerializeField, Range(0.00001f, 5f)] public float randomOffset = 0.08f;
     [SerializeField, Range(0.0001f, 20f)] private float _sizeMultiplier = 1f;
 
     private Material pointMaterial;
@@ -59,6 +60,7 @@ public class PointCloudRendererSimple : MonoBehaviour
         // Set shader properties
         pointMaterial.SetColor("_Tint", pointTint);
         pointMaterial.SetFloat("_PointSize", pointSize);
+        pointMaterial.SetFloat("_RandomOffset", randomOffset);
         pointMaterial.SetMatrix("_Transform", transform.worldToLocalMatrix);
         pointMaterial.SetFloat("_Size", _sizeMultiplier);
 

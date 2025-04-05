@@ -4,6 +4,7 @@ Shader "PointCloud/PointCloudSimple"
     {
         _Tint("Tint", Color) = (1, 1, 1, 1)
         _PointSize("Point Size", Float) = 0.01
+        _RandomOffset("Random offset", Float) = 0.08
     }
     SubShader
     {
@@ -35,10 +36,19 @@ Shader "PointCloud/PointCloudSimple"
                 float4 color : COLOR;
             };
 
+            // From https://www.shadertoy.com/view/4djSRW
+            float4 hash44(float4 p4)
+            {
+	            p4 = frac(p4  * float4(.1031, .1030, .0973, .1099));
+                p4 += dot(p4, p4.wzxy+33.33);
+                return frac((p4.xxyz+p4.yzzw)*p4.zywx);
+            }
+
             StructuredBuffer<float> _PointBuffer;
             float4x4 _Transform;
             const float4 _Tint;
             const float _PointSize;
+            const float _RandomOffset;
             const uint _Width;
             const uint _Height;
             const uint _Depth;
@@ -61,6 +71,7 @@ Shader "PointCloud/PointCloudSimple"
                 //    (life/ (_Width * _Height)) * _Size / float(_Depth)
                 //);
                 o.pos = UnityObjectToClipPos(float4(position, 1.0));
+                o.pos += hash44(float4(position, 1.0)) * _RandomOffset;
                 //mul(
                 //_Transform,
                 //);
@@ -88,6 +99,7 @@ Shader "PointCloud/PointCloudSimple"
                 // Display the UVW for debug :
                 // color = float4(positionLife,1);
                 o.color = color * _Tint;
+                
                 return o;
             }
             #if SQUARE_GEOMETRY
