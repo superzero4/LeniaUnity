@@ -29,6 +29,7 @@ namespace Visuals.Shaders.ComputeShader
         [Button]
         private void UpdateTexture()
         {
+            return;
             if (lastData == null)
                 return;
             if (_texture == null || _texture.width != _compute.Size.x || _texture.height != _compute.Size.y ||

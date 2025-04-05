@@ -77,7 +77,7 @@ public class ComputeShaderHandler : MonoBehaviour
 
     private void Dispatch(int kernelIndex)
     {
-        int factor = 2; //Should be equal, for each dimension, to the numThreads values in the shader
+        int factor = 8; //Should be equal, for each dimension, to the numThreads values in the shader
         int x = Mathf.Max(1, _size.x / factor);
         int y = Mathf.Max(1, _size.y / factor);
         int z = Mathf.Max(1, _size.z / factor);
@@ -88,7 +88,7 @@ public class ComputeShaderHandler : MonoBehaviour
 
     public int RadiusOfKernel => _radius;
 
-    private double[] InitialValues()
+    private double[] InitialValues(Texture3D texture)
     {
         List<double> doubles = new List<double>();
         var g = _parser.Parser.Lenia.generations[0];
@@ -118,13 +118,13 @@ public class ComputeShaderHandler : MonoBehaviour
         }
 
         return doubles.ToArray();
-        //float[] data = new float[texture.width * texture.height * texture.depth];
-        //var colors = texture.GetPixels();
-        //for (int i = 0; i < colors.Length; i++)
-        //{
-        //    data[i] = colors[i].r;
-        //}
-        //return data;
+        double[] data = new double[texture.width * texture.height * texture.depth];
+        var colors = texture.GetPixels();
+        for (int i = 0; i < colors.Length; i++)
+        {
+            data[i] = colors[i].r;
+        }
+        return data;
     }
 
     private IEnumerator Routine()
@@ -136,7 +136,7 @@ public class ComputeShaderHandler : MonoBehaviour
         _buffer2 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(double));
         if (!UseNoise)
         {
-            double[] tex = InitialValues();
+            double[] tex = InitialValues(_texture);
             _buffer1.SetData(tex);
             _buffer2.SetData(tex);
             _buffer3 = new ComputeBuffer(_size.x * _size.y * _size.z, sizeof(double));

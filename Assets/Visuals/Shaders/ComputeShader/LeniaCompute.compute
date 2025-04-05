@@ -2,7 +2,7 @@
 #pragma kernel NoiseMain
 #pragma kernel ConvolMain
 #pragma kernel CopyToOutput
-#define THREADS_NUMBER 2
+#define THREADS_NUMBER 8
 #include <HLSLSupport.cginc>
 StructuredBuffer<double> _Input;
 StructuredBuffer<double> _MidPut;

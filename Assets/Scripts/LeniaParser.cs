@@ -147,21 +147,21 @@ public class LeniaParser
                     if (_pixelSize == 1)
                     {
                         //Ramp from blue to red based on value representing life of a cell
-                        color = new Color(pixel[offset], 0f, 1 - pixel[offset],
-                            Mathf.Lerp(0.2f, 1f, pixel[offset]));
+                        color = new Color((float)pixel[offset], 0f, (float)(1 - pixel[offset]),
+                            Mathf.Lerp(0.2f, 1f, (float)pixel[offset]));
                     }
                     else
                     {
-                        color.r = pixel[offset];
+                        color.r = (float)pixel[offset];
                         if (_pixelSize >= 2)
                         {
-                            color.g = pixel[offset + 1];
+                            color.g = (float)pixel[offset + 1];
                             if (_pixelSize >= 3)
                             {
-                                color.b = pixel[offset + 2];
+                                color.b = (float)pixel[offset + 2];
                                 if (_pixelSize == 4)
                                 {
-                                    color.a = pixel[offset + 3];
+                                    color.a = (float)pixel[offset + 3];
                                 }
                             }
                         }

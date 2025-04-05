@@ -104,10 +104,10 @@ public class Lenia3D
             index++;
         }
 
-        public float this[Index offset]
+        public double this[Index offset]
         {
             //TODO
-            get => (float)cells[offset.IsFromEnd ? index - offset.Value : offset.Value];
+            get => cells[offset.IsFromEnd ? index - offset.Value : offset.Value];
         }
         //public float this[Index offset]
         //{
