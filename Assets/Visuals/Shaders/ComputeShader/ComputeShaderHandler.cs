@@ -36,6 +36,7 @@ public class ComputeShaderHandler : MonoBehaviour
 
     [SerializeField, Range(0.000001f, 5f)] private float _delayGenerations = .1f;
     [SerializeField, Range(0.000001f, 5f)] private float _delayNoise = .1f;
+    [SerializeField] private bool _showConvol = false;
 
     [SerializeField] private Vector3Int _size;
 
@@ -55,9 +56,13 @@ public class ComputeShaderHandler : MonoBehaviour
     private static readonly int Output = Shader.PropertyToID("_Output");
     private static readonly int FloatOutput = Shader.PropertyToID("_OutputF");
     private static readonly int Radius = Shader.PropertyToID("_Radius");
+    private static readonly int dt = Shader.PropertyToID("dt");
+    private static readonly int mu = Shader.PropertyToID("mu");
+    private static readonly int sigma = Shader.PropertyToID("sigma");
     private static readonly int ResX = Shader.PropertyToID("ResX");
     private static readonly int ResY = Shader.PropertyToID("ResY");
     private static readonly int ResZ = Shader.PropertyToID("ResZ");
+    
 
     private static readonly int Time = Shader.PropertyToID("_Time");
 
@@ -155,6 +160,9 @@ public class ComputeShaderHandler : MonoBehaviour
         _computeShader.SetInt(ResY, _size.y);
         _computeShader.SetInt(ResZ, _size.z);
         _computeShader.SetInt(Radius, _radius);
+        _computeShader.SetFloat(dt, _timeStep);
+        _computeShader.SetFloat(mu, _mu);
+        _computeShader.SetFloat(sigma, _sigma);
     }
 
     private IEnumerator Routine()
@@ -189,7 +197,7 @@ public class ComputeShaderHandler : MonoBehaviour
             for (int i = 0; i < 3; i++)
             {
                 _computeShader.SetInt(Convolution, i);
-                Dispatch(ConvolutionKernel, Midput, pingPongBuffers[i].Item1, pingPongBuffers[i].Item2,true);
+                Dispatch(ConvolutionKernel, Midput, pingPongBuffers[i].Item1, pingPongBuffers[i].Item2,_showConvol);
                 yield return new WaitForSeconds(_delayGenerations / 3f);
             }
 
@@ -197,7 +205,7 @@ public class ComputeShaderHandler : MonoBehaviour
             //For a new generation we need the result of the iterative convolution
             SetMidBuffer(LeniaKernel, pingPongBuffers[2].Item2);
             //We need the full untouched last generation info in _buffer1, we output the result in the last not in use buffer
-            Dispatch(LeniaKernel, _buffer1, finalResultBuffer, true);
+            Dispatch(LeniaKernel, _buffer1, finalResultBuffer, false);
             yield return new WaitForSeconds(_delayGenerations / 3f);
         }
 

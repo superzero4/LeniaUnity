@@ -53,7 +53,7 @@ Shader "PointCloud/PointCloudSimple"
             const uint _Height;
             const uint _Depth;
             const float _Size;
-            const float fadedThreshold = 0.01;
+            const float fadedThreshold = 0.00000001;
 
             v2f vert(appdata v)
             {

@@ -18,9 +18,9 @@ cbuffer ShaderParams
     uint ResY;
     uint ResZ;
     uint _Radius; // space resolution = kernel radius
-    //double dt; // time step
-    //double mu; // growth center
-    //double sigma; // growth width //Bert chan is 0.01f;
+    unorm float dt; // time step
+    unorm float mu; // growth center
+    unorm float sigma; // growth width //Bert chan is 0.01f;
     float4 _Time;
     double kernelNorm;
     int convolDim;
@@ -114,10 +114,6 @@ void CSMain(uint3 id : SV_DispatchThreadID) // Kernel 0
     double val = _Input[Index(id)];
 
     double avg = _MidPut[Index(id)]; //the cumulated result of all convolutions
-    double mu = 0.12;
-    double sigma = 0.01;
-    double dt = 0.1;
-    double growth = quadGrowth(avg, mu, sigma) * 2.0 - 1.0;
     unorm float growth = quadGrowth(avg, mu, sigma) * 2.0 - 1.0;
     double color = clamp(val + dt * growth, 0.0, 1.0);
     color = color;
