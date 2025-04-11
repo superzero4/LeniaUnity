@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -21,5 +22,11 @@ public class ConvolutionShaderRunner : MonoBehaviour
         {
             yield return _convol.ConvolAllDim(_delay);
         } while (!_runOnce);
+    }
+
+    [Button]
+    public void Step()
+    {
+        StartCoroutine(_convol.ConvolAllDim(_delay));
     }
 }

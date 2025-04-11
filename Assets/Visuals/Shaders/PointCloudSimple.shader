@@ -15,7 +15,7 @@ Shader "PointCloud/PointCloudSimple"
         }
         Cull Back
         ZWrite On
-        
+
         Pass
         {
             CGPROGRAM
@@ -39,9 +39,9 @@ Shader "PointCloud/PointCloudSimple"
             // From https://www.shadertoy.com/view/4djSRW
             float4 hash44(float4 p4)
             {
-	            p4 = frac(p4  * float4(.1031, .1030, .0973, .1099));
-                p4 += dot(p4, p4.wzxy+33.33);
-                return frac((p4.xxyz+p4.yzzw)*p4.zywx);
+                p4 = frac(p4 * float4(.1031, .1030, .0973, .1099));
+                p4 += dot(p4, p4.wzxy + 33.33);
+                return frac((p4.xxyz + p4.yzzw) * p4.zywx);
             }
 
             StructuredBuffer<float> _PointBuffer;
@@ -53,7 +53,7 @@ Shader "PointCloud/PointCloudSimple"
             const uint _Height;
             const uint _Depth;
             const float _Size;
-            const float fadedThreshold = 0.00000001;
+            const float _FadedThreshold;
 
             v2f vert(appdata v)
             {
@@ -72,14 +72,17 @@ Shader "PointCloud/PointCloudSimple"
                 //);
                 o.pos = UnityObjectToClipPos(float4(position, 1.0));
                 o.pos += hash44(float4(position, 1.0)) * _RandomOffset;
-                
                 float4 color;
-                const float4 dead = float4(0, 0, 1, 0);// Blue
+                const float4 dead = float4(0, 0, 1, 0); // Blue
                 const float4 mid = float4(0, 1, 0, 1); // Green
-                const float4 full = float4(1, 0, 0, 1);// Red
-
-                 // Interpolate between colors based on lifeValue
-                if (life < 0.5)
+                const float4 full = float4(1, 0, 0, 1); // Red
+                if (_FadedThreshold > .4f)
+                {
+                    color = full;
+                    color.a = life;
+                }
+                // Interpolate between colors based on lifeValue
+                else if (life < 0.5)
                 {
                     color = lerp(dead, mid, life * 2.0);
                 }
@@ -89,12 +92,12 @@ Shader "PointCloud/PointCloudSimple"
                 }
                 else
                 {
-                    color = full;
+                    color = float4(.5, .5, .5, 1);
                 }
                 // Display the UVW for debug :
                 // color = float4(positionLife,1);
+
                 o.color = color * _Tint;
-                
                 return o;
             }
             #if SQUARE_GEOMETRY
@@ -132,14 +135,14 @@ Shader "PointCloud/PointCloudSimple"
             [maxvertexcount(36)]
             void geom(point v2f input[1], inout TriangleStream<v2f> triStream)
             {
-                if (input[0].color.a <= fadedThreshold)
+                if (input[0].color.a <= _FadedThreshold)
                 {
                     return;
                 }
-                
+
                 float4 origin = input[0].pos;
                 float2 extent = abs(UNITY_MATRIX_P._11_22 * _PointSize);
-                
+
                 // Copy the basic information.
                 v2f o;
                 o.color = input[0].color;
