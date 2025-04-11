@@ -15,7 +15,7 @@ namespace Visuals.Shaders.ComputeShader
 
         public void Bind(ComputeBuffer buff)
         {
-            _pcs.SetBuffer(buff, _compute.Size, false);
+            _pcs.SetBuffer(buff, _compute.Size3D, false);
         }
 
         IEnumerator Start()
