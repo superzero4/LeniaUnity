@@ -72,12 +72,7 @@ Shader "PointCloud/PointCloudSimple"
                 //);
                 o.pos = UnityObjectToClipPos(float4(position, 1.0));
                 o.pos += hash44(float4(position, 1.0)) * _RandomOffset;
-                //mul(
-                //_Transform,
-                //);
                 
-                // o.pointSize = _PointSize;
-
                 float4 color;
                 const float4 dead = float4(0, 0, 1, 0);// Blue
                 const float4 mid = float4(0, 1, 0, 1); // Green

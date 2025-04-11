@@ -14,7 +14,7 @@ namespace Visuals.Shaders.ComputeShader
 
         [SerializeField, Range(-1, 2f)] private float _incrementDelay = .01f;
 
-        [SerializeField] private ComputeShaderHandler _compute;
+        [SerializeField] private IComputeBufferProvider _compute;
         [SerializeField] private Material _material;
         [SerializeField] private FilterMode _filterMode;
         private Texture2D _texture;
@@ -25,7 +25,7 @@ namespace Visuals.Shaders.ComputeShader
         private void Update()
         {
         }
-
+#if FALSE
         [Button]
         private void UpdateTexture()
         {
@@ -53,7 +53,7 @@ namespace Visuals.Shaders.ComputeShader
             int zMax = _compute.Size.z;
             float[] Zs = new float[zMax];
             float sumZ = 0;
-            float radius = _compute.RadiusOfKernel;
+            float radius = _compute.ConvolutionShaderHandler.RadiusOfKernel;
             for (int z = 0; z < zMax; z++)
             {
                 float X = (z - zMax / 2) / radius;
@@ -102,7 +102,6 @@ namespace Visuals.Shaders.ComputeShader
             lastData = new float[size];
             buffer.GetData(lastData, 0, 0, size);
         }
-
         [Button]
         public void Increment()
         {
@@ -113,7 +112,7 @@ namespace Visuals.Shaders.ComputeShader
         {
             InitColorMap();
 
-            yield return new WaitUntil(() => _compute.ReadBuffer != null);
+            yield return new WaitUntil(() => _compute.Buffer != null);
             yield return new WaitForEndOfFrame();
             while (true)
             {
@@ -140,6 +139,7 @@ namespace Visuals.Shaders.ComputeShader
             ReadBuffer(outBuffer);
             UpdateTexture();
         }
+#endif
 
         private byte[] map = new byte[]
         {

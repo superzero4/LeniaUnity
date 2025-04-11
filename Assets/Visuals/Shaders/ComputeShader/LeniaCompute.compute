@@ -1,15 +1,7 @@
-#pragma kernel CSMain
-#pragma kernel NoiseMain
-#pragma kernel ConvolMain
-#pragma kernel CopyToOutput
-#pragma kernel CopyToFloat
-#define THREADS_NUMBER 8
-#include <HLSLSupport.cginc>
-StructuredBuffer<double> _Input;
-StructuredBuffer<double> _MidPut;
-RWStructuredBuffer<double> _Output;
-RWStructuredBuffer<float> _OutputF;
-StructuredBuffer<double> _kernel;
+//#pragma kernel CSMain
+//#pragma kernel NoiseMain
+//#pragma kernel CopyToOutput
+//#pragma kernel CopyToFloat
 
 // #region Common
 cbuffer ShaderParams

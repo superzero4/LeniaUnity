@@ -1,12 +1,16 @@
 ﻿using System.Collections;
 using NaughtyAttributes;
+using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Visuals.Shaders.ComputeShader
 {
     public class ComputeToVertex : MonoBehaviour
     {
-        [SerializeField] private ComputeShaderHandler _compute;
+        [SerializeField]
+        private GameObject _holder;
+        [SerializeField] private IComputeBufferProvider _compute;
         [SerializeField] private PointCloudRendererSimple _pcs;
 
         public void Bind(ComputeBuffer buff)
@@ -16,9 +20,16 @@ namespace Visuals.Shaders.ComputeShader
 
         IEnumerator Start()
         {
-            yield return new WaitUntil(() => _compute.ReadBuffer != null);
+            _compute = _holder.GetComponent<IComputeBufferProvider>();
+            Assert.IsNotNull(_compute, $"Compute buffer provider {_holder.name} not found on the buffer object.");
+            yield return new WaitUntil(() => _compute.Buffer != null);
             yield return new WaitForEndOfFrame();
-            Bind(_compute.ReadBuffer);
+            Bind(_compute.Buffer);
+            while (true)
+            {
+                Bind(_compute.Buffer);
+                yield return new WaitForSeconds(0.016f);
+            }
         }
     }
 }
