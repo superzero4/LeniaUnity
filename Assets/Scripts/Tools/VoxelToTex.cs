@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DefaultNamespace.Tools
 {
@@ -11,6 +12,8 @@ namespace DefaultNamespace.Tools
         [SerializeField] private Texture3DSO _texture;
         [SerializeField] private string _path;
         [SerializeField] private string _name;
+        [SerializeField, Range(0, 1f)] private float _yOffset = 0f;
+        [SerializeField] private bool _ignoreSourceColor = false;
 
         private struct Voxel
         {
@@ -31,7 +34,9 @@ namespace DefaultNamespace.Tools
                     Voxel v = new Voxel()
                     {
                         pos = new Vector3Int(split[0], split[1], split[2]),
-                        color = new Color(split[3] / 255f, split[4] / 255f, split[5] / 255f)
+                        color = _ignoreSourceColor
+                            ? new Color(1f, 1f, 1f, 1f)
+                            : new Color(split[3] / 255f, split[4] / 255f, split[5] / 255f)
                     };
                     max.x = Mathf.Max(max.x, v.pos.x);
                     max.y = Mathf.Max(max.y, v.pos.y);
@@ -49,11 +54,11 @@ namespace DefaultNamespace.Tools
             tex.SetPixels(Enumerable.Repeat(Color.clear, tex.width * tex.height * tex.depth).ToArray());
             foreach (var v in voxels)
             {
-                tex.SetPixel(v.pos.x + padding / 2, v.pos.y + globalMax / 2, v.pos.z + padding / 2,
+                tex.SetPixel(v.pos.x + padding / 2, v.pos.y + (int)(globalMax * _yOffset), v.pos.z + padding / 2,
                     v.color);
             }
 
-            _texture.Save(tex, "VoxelTex");
+            _texture.Save(tex, _name.Split('_')[0]);
             ;
         }
     }
