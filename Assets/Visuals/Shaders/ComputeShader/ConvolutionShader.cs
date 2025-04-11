@@ -130,32 +130,24 @@ public class ConvolutionShader : MonoBehaviour, IComputeBufferProvider
     private void InitKernel()
     {
         var diam = diameter;
-        Debug.LogWarning(("To make ND !!"));
-        float[][][] kernel = new float[diam][][];
+        float[] flat = new float[_kernel.count];
         double norm = 0;
-        for (int x = -_radius; x <= _radius; x++)
+        for (int i = 0; i < flat.Length; i++)
         {
-            float[][] yList = new float[diam][];
-            for (int y = -_radius; y <= _radius; y++)
+            uint tot = 0;
+            for (int j = 0; j < nbDim; j++)
             {
-                float[] zList = new float[diam];
-                for (int z = -_radius; z <= _radius; z++)
-                {
-                    float r = Mathf.Sqrt(x * x + y * y + z * z) / _radius;
-                    float val = r <= 1f ? Mathf.Pow(4 * r * (1 - r), 4) : 0;
-                    norm += val;
-                    zList[z + _radius] = r <= 1f ? 1f : 0;
-                }
-
-                yList[y + _radius] = zList;
+                // jth out of nbDim coordinates of the ith element in a nbDim dimension space
+                var coord = (i / Mathf.Pow(diam, j) % diam) - _radius;
+                tot += (uint)(coord * coord);
             }
 
-            kernel[x + _radius] = yList;
+            float r = Mathf.Sqrt(tot) / _radius;
+            float val = r <= 1f ? Mathf.Pow(4 * r * (1 - r), 4) : 0;
+            norm += val;
+            flat[i] = r <= 1f ? 1f : 0;
         }
 
-        CheckKenrel(kernel);
-
-        float[] flat = kernel.SelectMany(a => a.SelectMany(b => b)).ToArray();
         Assert.AreEqual(flat.Length, _kernel.count,
             $"Kernel size {flat.Length} != {_kernel.count}");
         _kernel.SetData(flat);
