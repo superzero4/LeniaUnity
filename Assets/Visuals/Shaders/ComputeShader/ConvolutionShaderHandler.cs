@@ -14,27 +14,26 @@ public interface IComputeBufferProvider
 
 public interface IKernel
 {
-    public int[] Dims { get; }
     public int Radius { get; }
-    public int TotalSize => Dims.Aggregate(1, (d, acc) => acc * d);
-    public Vector3Int Size => new Vector3Int(Dims[0], Dims[1], Dims[2]);
-    public int nbDim => Dims.Length;
-    public float KernelValue(float distanceToCenter);
+
+    public float KernelValue(uint[] coords, float relativeDistanceToCenter);
     public int Diameter => Radius * 2 + 1;
 }
 
 public interface IInitValues
 {
     public float[] InitialValues();
+    public int[] Dims { get; }
+    public int TotalSize => Dims.Aggregate(1, (d, acc) => acc * d);
+    public Vector3Int Size => new Vector3Int(Dims[0], Dims[1], Dims[2]);
+    public int nbDim => Dims.Length;
 }
 
 public abstract class KernelInfo : MonoBehaviour, IKernel
 {
-    [Header("Settings")] [SerializeField] private int[] _dims;
     [SerializeField, Range(1, 50)] private int _radius = 15;
     public int Radius => _radius;
-    public int[] Dims => _dims;
-    public abstract float KernelValue(float distanceToCenter);
+    public abstract float KernelValue(uint[] coords, float distanceToCenter);
 }
 
 public class ConvolutionShaderHandler : MonoBehaviour, IComputeBufferProvider
@@ -91,27 +90,28 @@ public class ConvolutionShaderHandler : MonoBehaviour, IComputeBufferProvider
         _computeShader.Dispatch(ConvolutionKernel, (int)(x / threadX), (int)(y / threadY), (int)(z / threadZ));
     }
 
-    private IKernel _info;
+    private IInitValues _info;
 
-    public void Init(IKernel info, IInitValues init)
+
+    public void Init(IKernel kernel, IInitValues init)
     {
-        Assert.IsNotNull(info, "ConvolutionInfo is null");
+        Assert.IsNotNull(kernel, "ConvolutionInfo is null");
         Assert.IsNotNull(init, "InitValues is null");
-        _info = info;
+        _info = init;
         ReleaseBuffers();
         var size = _info.TotalSize;
         Debug.Log($"Total size of the space : {size}");
         _buffer1 = new ComputeBuffer(size, sizeof(float));
         _buffer2 = new ComputeBuffer(size, sizeof(float));
-        _kernel = new ComputeBuffer((int)Mathf.Pow(_info.Diameter, _info.nbDim), sizeof(float));
+        _kernel = new ComputeBuffer((int)Mathf.Pow(kernel.Diameter, _info.nbDim), sizeof(float));
 
         _computeShader.SetInt(NbDimId, _info.nbDim);
         //SetInts expect size of float4 for each value for an array, we have a int array and sizeof(int)=sizeof(float) therefore adding 3 "empty" values after each value as padding makes value go correctly in the shader
         var dim = _info.Dims.SelectMany(i => new int[] { i, 0, 0, 0 }).ToArray();
         _computeShader.SetInts(SizeArray, dim);
-        _computeShader.SetInt(RadiusId, _info.Radius);
+        _computeShader.SetInt(RadiusId, kernel.Radius);
 
-        InitKernel();
+        InitKernel(kernel);
         var values = init.InitialValues();
         _buffer1.SetData(values);
         _buffer2.SetData(values);
@@ -144,23 +144,25 @@ public class ConvolutionShaderHandler : MonoBehaviour, IComputeBufferProvider
         return distanceToCenter <= 1f ? Mathf.Pow(4 * distanceToCenter * (1 - distanceToCenter), 4) : 0;
     }
 
-    private void InitKernel()
+    private void InitKernel(IKernel kernel)
     {
-        var diam = _info.Diameter;
+        var diam = kernel.Diameter;
         float[] flat = new float[_kernel.count];
         double norm = 0;
         for (int i = 0; i < flat.Length; i++)
         {
             uint tot = 0;
+            uint[] coords = new uint[_info.nbDim];
             for (int j = 0; j < _info.nbDim; j++)
             {
                 // jth out of nbDim coordinates of the ith element in a nbDim dimension space
-                var coord = (i / Mathf.Pow(diam, j) % diam) - _info.Radius;
-                tot += (uint)(coord * coord);
+                var coord = (uint)((i / Mathf.Pow(diam, j) % diam) - kernel.Radius);
+                coords[j] = coord;
+                tot += (coord * coord);
             }
 
-            float r = Mathf.Sqrt(tot) / _info.Radius;
-            float val = _info.KernelValue(r);
+            float r = Mathf.Sqrt(tot) / kernel.Radius;
+            float val = kernel.KernelValue(coords, r);
             norm += val;
             flat[i] = val;
         }
