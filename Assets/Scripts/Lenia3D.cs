@@ -23,6 +23,17 @@ public class Lenia3D
         [SerializeField, Label("Count")] private int index;
         public Grid[] cells => grids;
 
+        public Generation(Generation other)
+        {
+            grids = new Grid[other.grids.Length];
+            for (int i = 0; i < other.grids.Length; i++)
+            {
+                grids[i] = new Grid(other.grids[i]);
+            }
+
+            index = other.index;
+        }
+
         public Generation(int size)
         {
             grids = new Grid[size];
@@ -53,6 +64,17 @@ public class Lenia3D
         [SerializeField, Label("Count")] private int index;
         public Row[] cells => rows;
 
+        public Grid(Grid other)
+        {
+            rows = new Row[other.rows.Length];
+            for (int i = 0; i < other.rows.Length; i++)
+            {
+                rows[i] = new Row(other.rows[i]);
+            }
+
+            index = other.index;
+        }
+
         public Grid(int size)
         {
             rows = new Row[size];
@@ -80,6 +102,17 @@ public class Lenia3D
         [SerializeField] public double[] cells;
         [SerializeField, Label("Count")] private int index;
 
+        public Row(Row other)
+        {
+            cells = new double[other.cells.Length];
+            for (int i = 0; i < other.cells.Length; i++)
+            {
+                cells[i] = other.cells[i];
+            }
+
+            index = other.index;
+        }
+
         public Row(int size)
         {
             cells = new double[size];
@@ -98,6 +131,7 @@ public class Lenia3D
             cells[index] = value;
             index++;
         }
+
         public void Add(double value)
         {
             cells[index] = value;
@@ -114,5 +148,15 @@ public class Lenia3D
         //}
     }
 
-    public string DimensionsString => "["+(generations != null ? generations.Count.ToString() : "0") +" "+(generations!= null && generations.Count > 0 ? generations[^1].Count.ToString() : "0") + " "+(generations!= null && generations.Count > 0&& generations[^1].Count > 0 ? generations[^1][^1].Count.ToString() : "0")+" "+(generations!= null && generations.Count > 0 && generations[^1].Count > 0 &&  generations[^1][^1].Count>0 ? generations[^1][^1][^1].Count.ToString() : "0")+"]";
+    public string DimensionsString => "[" + (generations != null ? generations.Count.ToString() : "0") + " " +
+                                      (generations != null && generations.Count > 0
+                                          ? generations[^1].Count.ToString()
+                                          : "0") + " " +
+                                      (generations != null && generations.Count > 0 && generations[^1].Count > 0
+                                          ? generations[^1][^1].Count.ToString()
+                                          : "0") + " " +
+                                      (generations != null && generations.Count > 0 && generations[^1].Count > 0 &&
+                                       generations[^1][^1].Count > 0
+                                          ? generations[^1][^1][^1].Count.ToString()
+                                          : "0") + "]";
 }

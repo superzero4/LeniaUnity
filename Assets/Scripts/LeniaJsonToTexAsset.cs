@@ -1,5 +1,4 @@
 #if UNITY_EDITOR
-
 using System.IO;
 using System.Threading;
 using UnityEngine;
@@ -20,10 +19,9 @@ public class LeniaJsonToTexAsset : MonoBehaviour
     private Texture3D _texture;
 
     private EditorCoroutine _running;
-
     private CancellationTokenSource _toker;
     [SerializeField] LeniaParser parser = new();
-
+    [SerializeField] private LeniaHolder _holder;
     public LeniaParser Parser => parser;
 
     [Button("Process the file at _path into 3DTextures")]
@@ -44,6 +42,7 @@ public class LeniaJsonToTexAsset : MonoBehaviour
                             "FromJson-Pix" + _settings.pixelSize + "-" +
                             _settings.format.ToString());
                         _toker.Cancel();
+                        Save();
                     }
                     //Debug.Log("Dims : " + parser.Lenia.DimensionsString);
                 });
@@ -55,46 +54,16 @@ public class LeniaJsonToTexAsset : MonoBehaviour
         }
     }
 
+    [Button]
+    private void Save()
+    {
+        _holder.lenia = parser.Lenia;
+    }
     [Button("Cancel")]
     private void Cancel()
     {
         _cancel = true;
         _toker.Cancel();
-    }
-
-    /*
-    IEnumerator ProcessFile()
-    {
-        //Can be modified externally of this method to block the execution
-        _cancel = false;
-        DirectoryInfo parent = new DirectoryInfo(Application.dataPath).Parent;
-        _reader = new StreamReader(File.OpenRead(Path.Combine(parent.FullName, _path)));
-
-        string line;
-        //LeniaParser parser = new();
-        //parser.Init(_settings);
-
-        int step = 0;
-        while (_reader.Peek() >= 0 && !_cancel)
-        {
-            line = _reader.ReadLine();
-            //parser.NewLine(line, out Texture3D texture);
-            /*if (texture)
-            {
-                _textureSO.Save(texture,
-                    "Gen" + step.ToString() + "-Pix" + _settings.pixelSize + "-" + _settings.format.ToString());
-                step++;
-                _texture = texture;
-                yield return new WaitForEndOfFrame();
-            }#1#
-        }
-
-        Debug.LogWarning("Done");
-        _reader.Close();
-    }*/
-
-    private void OnDestroy()
-    {
     }
 }
 

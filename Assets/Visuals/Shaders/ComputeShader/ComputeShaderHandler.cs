@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using DefaultNamespace;
 using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -32,7 +33,7 @@ public class ComputeShaderHandler : MonoBehaviour
     [SerializeField, Tooltip("Noise used instead")]
     private Texture3D _texture;
 
-    [SerializeField] private LeniaJsonToTexAsset _parser;
+    [SerializeField] private LeniaHolder _parser;
 
     [SerializeField, Range(0.000001f, 5f)] private float _delayGenerations = .1f;
     [SerializeField, Range(0.000001f, 5f)] private float _delayNoise = .1f;
@@ -62,7 +63,7 @@ public class ComputeShaderHandler : MonoBehaviour
     private static readonly int ResX = Shader.PropertyToID("ResX");
     private static readonly int ResY = Shader.PropertyToID("ResY");
     private static readonly int ResZ = Shader.PropertyToID("ResZ");
-    
+
 
     private static readonly int Time = Shader.PropertyToID("_Time");
 
@@ -99,7 +100,7 @@ public class ComputeShaderHandler : MonoBehaviour
     private double[] InitialValues(Texture3D texture)
     {
         List<double> doubles = new List<double>();
-        var g = _parser.Parser.Lenia.generations[0];
+        var g = _parser.lenia.generations[0];
         for (int i = 0; i < _size.x; i++)
         {
             string str = "";
@@ -197,7 +198,7 @@ public class ComputeShaderHandler : MonoBehaviour
             for (int i = 0; i < 3; i++)
             {
                 _computeShader.SetInt(Convolution, i);
-                Dispatch(ConvolutionKernel, Midput, pingPongBuffers[i].Item1, pingPongBuffers[i].Item2,_showConvol);
+                Dispatch(ConvolutionKernel, Midput, pingPongBuffers[i].Item1, pingPongBuffers[i].Item2, _showConvol);
                 yield return new WaitForSeconds(_delayGenerations / 3f);
             }
 
