@@ -73,10 +73,13 @@ public class PointCloudRendererSimple : MonoBehaviour
 
     private void UpdateView(int width, int height, int depth)
     {
+        var dbg = new float[256];
         pointMaterial.SetInt("_Width", width);
         pointMaterial.SetInt("_Height", height);
         pointMaterial.SetInt("_Depth", depth);
         pointMaterial.SetBuffer("_PointBuffer", pointBuffer);
+        //pointBuffer.GetData(dbg);
+        //Debug.Log("Points :" + string.Join(", ", dbg));
     }
 
     void OnDestroy()
