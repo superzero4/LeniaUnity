@@ -90,7 +90,7 @@ void ConvolMain(uint id : SV_DispatchThreadID) //kernel 0
         total += weight;
     }
     //Kernel already normalize in the kernel itself
-    float value = sum; // / total;
+    float value = sum / total;
     //Resets for debug
     idCoord[_ConvolDim] = initial;
     offsets[_ConvolDim] = 0;
