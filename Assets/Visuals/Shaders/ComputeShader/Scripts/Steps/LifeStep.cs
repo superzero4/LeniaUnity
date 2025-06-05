@@ -27,20 +27,13 @@ namespace Visuals.Shaders.ComputeShader.Scripts.Steps
         {
             ShaderCommons.SetBuffers(ShaderCommons.GrowthKernel, _last, _result);
             ShaderCommons.SetBuffer(ShaderCommons.GrowthKernel, midput, buffer);
-            LogBuffer(_last,"last");
-            LogBuffer(buffer,"shared/midput");
+            //ShaderCommons.LogBuffer(_last,"last");
+            //ShaderCommons.LogBuffer(buffer,"shared/midput");
             ShaderCommons.Dispatch(ShaderCommons.GrowthKernel, buffer.count);
             yield return new WaitForSeconds(delay);
-            LogBuffer(_result,"result after growth dispatched");
+            //ShaderCommons.LogBuffer(_result,"result after growth dispatched");
             ShaderCommons.Copy(_result, buffer);
             ShaderCommons.Copy(_result, _last);
-        }
-
-        private void LogBuffer(ComputeBuffer buffer, string name = "buffer")
-        {
-            float[] data = new float[buffer.count];
-            buffer.GetData(data);
-            Debug.Log($"Buffer data: {name} {string.Join(", ", data)}");
         }
 
         public void Init(IInitValues init)

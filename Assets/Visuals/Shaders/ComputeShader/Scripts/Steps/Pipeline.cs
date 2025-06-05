@@ -15,6 +15,7 @@ public class Pipeline : MonoBehaviour, IComputeBufferProvider
 
     private IInitValues _info;
     private ComputeBuffer _shared;
+    private ComputeBuffer _displayBuffer;
 
     public Vector3Int Size3D => _info.Size;
     private UnityEvent<ComputeBuffer> _onUpdate = new UnityEvent<ComputeBuffer>();
@@ -35,7 +36,7 @@ public class Pipeline : MonoBehaviour, IComputeBufferProvider
             step.Init(init);
 
         yield return new WaitForSeconds(_initDelay);
-        _onUpdate.Invoke(_shared);
+        RaiseUpdate();
         while (!_runOnce)
         {
             yield return StepEnumerator();
@@ -49,12 +50,25 @@ public class Pipeline : MonoBehaviour, IComputeBufferProvider
             yield return step.Step(_shared, _delay);
             yield return new WaitForSeconds(_delay);
             if (!_finalUpdateOnly)
-                _onUpdate.Invoke(_shared);
+                RaiseUpdate();
         }
 
         yield return new WaitForSeconds(_delay);
         if (_finalUpdateOnly)
-            _onUpdate.Invoke(_shared);
+            RaiseUpdate();
+    }
+
+    private void RaiseUpdate()
+    {
+        StartCoroutine(RaiseUpdateRoutine());
+    }
+
+    private IEnumerator RaiseUpdateRoutine()
+    {
+        ShaderCommons.Copy(_shared, _displayBuffer);
+        _onUpdate.Invoke(_displayBuffer);
+        ShaderCommons.LogBuffer(_displayBuffer, "Display buffer after step");
+        yield break;
     }
 
     [Button]
@@ -70,6 +84,7 @@ public class Pipeline : MonoBehaviour, IComputeBufferProvider
         var size = _info.TotalSize;
         Debug.Log($"Total size of the space : {size}");
         _shared = new ComputeBuffer(size, sizeof(float));
+        _displayBuffer = new ComputeBuffer(size, sizeof(float));
         var values = init.InitialValues();
         _shared.SetData(values);
     }
@@ -77,6 +92,7 @@ public class Pipeline : MonoBehaviour, IComputeBufferProvider
     private void ReleaseBuffers()
     {
         _shared?.Release();
+        _displayBuffer?.Release();
         if (_steps != null)
             foreach (IStep step in _steps)
                 step.Release();

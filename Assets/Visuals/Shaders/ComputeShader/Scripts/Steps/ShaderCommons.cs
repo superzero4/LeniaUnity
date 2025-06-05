@@ -57,13 +57,23 @@ public static class ShaderCommons
         int x = size;
         int y = 1;
         int z = 1;
+        Assert.IsTrue(Mathf.IsPowerOfTwo(x), $"x:{x} is not a power of two, unexpected behavior may occur.");
         Assert.IsTrue(x * y * z == size, $"x:{x},y:{y},z:{z}!= {size}");
-        id.shader.Dispatch(id.kernel, Mathf.Max(1,(int)(x / threadX)), Mathf.Max(1,(int)(y / threadY)), Mathf.Max(1,(int)(z / threadZ),1));
+        id.shader.Dispatch(id.kernel, Mathf.Max(1, (int)(x / threadX)), Mathf.Max(1, (int)(y / threadY)),
+            Mathf.Max(1, (int)(z / threadZ), 1));
     }
 
     public static void Copy(ComputeBuffer input, ComputeBuffer output)
     {
         SetBuffers(CopyKernel, input, output);
         Dispatch(CopyKernel, input.count);
+    }
+
+    public static void LogBuffer(ComputeBuffer buffer, string name = "buffer")
+    {
+        return;
+        float[] data = new float[buffer.count];
+        buffer.GetData(data);
+        Debug.Log($"Buffer data: {name} {string.Join(", ", data)}");
     }
 }

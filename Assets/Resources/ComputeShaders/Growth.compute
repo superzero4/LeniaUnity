@@ -38,9 +38,10 @@ inline unorm float bellGrowth(float x, unorm float m, unorm float s)
     return exp(-pow(x - m, 2) / (2 * pow(s, 2)));
 }
 
-inline int intGrowth(int x)
+inline int intGrowth(int val, int count)
 {
-    return 0 + (x >= 34 && x <= 45 ? 1 : 0) - (x < 33 || x > 57 ? 1 : 0);
+    //R5,C2,S33-57,B34-45
+    return val == 0 ? (count >= 34 && count <= 45 ? 1 : 0) : (count >= 33 && count <= 57 ? 0 : -1);
 }
 
 [numthreads(THREADS_NUMBER,1,1)]
@@ -60,7 +61,7 @@ void CSMain(uint id : SV_DispatchThreadID) // Kernel 0
 
     unorm float rawGrowth =
         #ifdef USE_INT_GROWTH
-        intGrowth(int(avg));
+        intGrowth(val,int(avg));
     float growth = rawGrowth;
     dt = 1;
     #elif  USE_BELL_GROWTH

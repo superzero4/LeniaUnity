@@ -14,29 +14,31 @@ public class DimInitializer : MonoBehaviour, IInitValues
     [SerializeField, Range(0, 1f), ShowIf(nameof(_useDefaultOverRandom))]
     private float _defaultValue = 0.5f;
 
-    private float _seed;
+    private int _seed;
 
     private void Awake()
     {
-        _seed = Time.realtimeSinceStartup;
+        _seed = System.DateTime.Now.Millisecond;
     }
 
     public float[] InitialValues()
     {
-        Random random = new Random((int)(_seed * 1000));
-        return Enumerable.Range(0, (this as IInitValues).TotalSize).Select(i =>
+        Random random = new Random(_seed);
+        float[] values = new float[(this as IInitValues).TotalSize];
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (_useDefaultOverRandom)
+                values[i] = _defaultValue;
+            else
             {
-                if (_useDefaultOverRandom)
-                    return _defaultValue;
-                else
-                {
-                    float rd = (float)random.NextDouble();
-                    if (_01Randoms)
-                        rd = rd > .5f ? 1f : 0f;
-                    return rd;
-                }
-            })
-            .ToArray();
+                float rd = (float)(random.NextDouble() % 1f);
+                if (_01Randoms)
+                    rd = rd > .5f ? 1f : 0f;
+                values[i] = rd;
+            }
+        }
+
+        return values;
     }
 
     public int[] Dims => _dims;

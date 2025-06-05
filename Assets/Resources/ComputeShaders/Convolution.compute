@@ -53,7 +53,7 @@ inline uint KernelIndex(int id Size)
 
 inline uint boundMod(int val, uint bound)
 {
-    uint sum = val + bound; //Positive as long as val isn't < -bounde
+    int sum = val + (int)bound; //Positive as long as val isn't < -bounde
     return sum % bound;
 }
 
@@ -73,7 +73,7 @@ void ConvolMain(uint id : SV_DispatchThreadID) //kernel 0
     for (int j = 0; j < _nbDim; j++)
     {
         idCoord[j] = temp % _Res[j];
-        temp = temp / _Res[j];
+        temp /= _Res[j];
         offsets[j] = 0; //The center
     }
     float sum = 0.0f;
@@ -90,7 +90,7 @@ void ConvolMain(uint id : SV_DispatchThreadID) //kernel 0
         total += weight;
     }
     //Kernel already normalize in the kernel itself
-    float value = sum;// / total;
+    float value = sum; // / total;
     //Resets for debug
     idCoord[_ConvolDim] = initial;
     offsets[_ConvolDim] = 0;
@@ -100,7 +100,7 @@ void ConvolMain(uint id : SV_DispatchThreadID) //kernel 0
     //_Output[id1] = _Input[Index(idCoord)] * _KernelValues[KernelIndex(offsets)];
     //return;
     //_Output[id1] = idCoord[_ConvolDim] * 1.f / (_Res[_ConvolDim] * 1.f);
-//
+    //
     //const uint diam = diameter();
     //const int radius = (int)_Radius;
     ////Debug Kernel :

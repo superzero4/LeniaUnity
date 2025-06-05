@@ -78,11 +78,13 @@ public class ConvolutionsStep : MonoBehaviour, IStep
 
     public IEnumerator ConvolAllDim(float delay)
     {
+        ShaderCommons.LogBuffer(Entry, "Entry before convolution");
         for (int i = 0; i < _info.nbDim; i++)
         {
             DispatchConvol(i);
             if (delay > 0)
                 yield return new WaitForSeconds(delay);
+            ShaderCommons.LogBuffer(Entry, $"Result after convolution on dimension {i}");
         }
 
         //Safe to ensure data ends in the shared buffer, independent on the parity of number of dimensions
@@ -119,6 +121,8 @@ public class ConvolutionsStep : MonoBehaviour, IStep
 
         Assert.AreEqual(flat.Length, _kernel.count,
             $"Kernel size {flat.Length} != {_kernel.count}");
+        Assert.IsTrue(flat.All(f=> !float.IsNaN(f) && !float.IsInfinity(f)),
+            "Kernel contains NaN or Infinity values");
         _kernel.SetData(flat);
         _computeShader.SetFloat(KernelNorm, (float)norm);
         ShaderCommons.SetBuffer(ShaderCommons.ConvolutionKernel, Kernel, _kernel);
