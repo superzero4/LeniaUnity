@@ -36,13 +36,18 @@ namespace Visuals.Shaders.ComputeShader.Scripts
         public float KernelValue(uint[] coords, float relativeDistanceToCenter);
         public int Diameter => Radius * 2 + 1;
         public bool Normalize => true; // Default to true, can be overridden
+        public ShaderCommons.GrowthMode Growth { get; } // Default growth mode
     }
 
     public abstract class KernelInfo : MonoBehaviour, IKernel
     {
         [SerializeField, Range(1, 50)] private int _radius = 15;
+        [SerializeField]
+        private ShaderCommons.GrowthMode _growth;
         public int Radius => _radius;
         public abstract float KernelValue(uint[] coords, float distanceToCenter);
         public virtual bool Normalize => true;
+
+        public ShaderCommons.GrowthMode Growth => _growth;
     }
 }

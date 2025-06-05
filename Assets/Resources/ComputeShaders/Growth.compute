@@ -1,7 +1,6 @@
 // Each #kernel tells which function to compile; you can have many kernels
+
 #define THREADS_NUMBER 1024
-#define USE_BELL_GROWTH 1
-#define USE_INT_GROWTH 1
 #pragma kernel CSMain
 #pragma kernel CopyToOutput
 
@@ -12,9 +11,10 @@ RWStructuredBuffer<float> _Output;
 
 cbuffer ShaderParams
 {
-    unorm float dt; // time step
+    float dt; // time step
     unorm float mu; // growth center
     unorm float sigma; // growth width //Bert chan is 0.01f;
+    uint growthMode;
 }
 
 inline uint Index(uint id)
@@ -59,18 +59,24 @@ void CSMain(uint id : SV_DispatchThreadID) // Kernel 0
 
     float avg = _MidPut[Index(id)]; //the cumulated result of all convolutions
 
-    unorm float rawGrowth =
-        #ifdef USE_INT_GROWTH
-        intGrowth(val,int(avg));
-    float growth = rawGrowth;
-    dt = 1;
-    #elif  USE_BELL_GROWTH
-            bellGrowth(avg, mu, sigma);
-    float growth = rawGrowth * 2.0 - 1.0;
-    #else
-        quadGrowth(avg, mu, sigma);
-    float growth = rawGrowth * 2.0 - 1.0;
-    #endif
+    unorm float rawGrowth = 0.f;
+    float growth = 0.f;
+    if (growthMode == 0)
+    {
+        rawGrowth = intGrowth(val, int(avg));
+        growth = rawGrowth;
+        dt = 1;
+    }
+    else if (growthMode == 1)
+    {
+        rawGrowth = bellGrowth(avg, mu, sigma);
+        growth = rawGrowth * 2.0 - 1.0; //To have a value between -1 and 1
+    }
+    else if (growthMode == 2)
+    {
+        rawGrowth = quadGrowth(avg, mu, sigma);
+        growth = rawGrowth * 2.0 - 1.0;
+    }
     unorm float color = clamp(val + dt * growth, 0.0, 1.0);
     //const uint diam = diameter();
     //Debug Kernel :

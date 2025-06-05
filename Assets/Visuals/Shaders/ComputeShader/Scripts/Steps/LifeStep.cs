@@ -25,13 +25,14 @@ namespace Visuals.Shaders.ComputeShader.Scripts.Steps
         
         public IEnumerator Step(ComputeBuffer buffer, float delay)
         {
+            
             ShaderCommons.SetBuffers(ShaderCommons.GrowthKernel, _last, _result);
             ShaderCommons.SetBuffer(ShaderCommons.GrowthKernel, midput, buffer);
-            //ShaderCommons.LogBuffer(_last,"last");
-            //ShaderCommons.LogBuffer(buffer,"shared/midput");
+            ShaderCommons.LogBuffer(_last,"last");
+            ShaderCommons.LogBuffer(buffer,"shared/midput");
             ShaderCommons.Dispatch(ShaderCommons.GrowthKernel, buffer.count);
             yield return new WaitForSeconds(delay);
-            //ShaderCommons.LogBuffer(_result,"result after growth dispatched");
+            ShaderCommons.LogBuffer(_result,"result after growth dispatched");
             ShaderCommons.Copy(_result, buffer);
             ShaderCommons.Copy(_result, _last);
         }

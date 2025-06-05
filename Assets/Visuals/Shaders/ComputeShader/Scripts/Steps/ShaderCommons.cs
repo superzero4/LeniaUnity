@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Rendering;
 
 public static class ShaderCommons
 {
@@ -69,11 +70,19 @@ public static class ShaderCommons
         Dispatch(CopyKernel, input.count);
     }
 
+    public enum GrowthMode
+    {
+        Int=0,
+        Bell=1,
+        Quadratic=2
+    }
+
+
     public static void LogBuffer(ComputeBuffer buffer, string name = "buffer")
     {
         return;
         float[] data = new float[buffer.count];
         buffer.GetData(data);
-        Debug.Log($"Buffer data: {name} {string.Join(", ", data)}");
+        Debug.Log($"Buffer data: {name}\n {string.Join(", ", data)}");
     }
 }

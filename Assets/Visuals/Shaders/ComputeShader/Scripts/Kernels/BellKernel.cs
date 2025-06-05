@@ -9,7 +9,7 @@ namespace Visuals.Shaders.ComputeShader.Scripts.ComputeShader.Scripts
 
         public override float KernelValue(uint[] coords, float relativeDistanceToCenter)
         {
-            return bell(relativeDistanceToCenter, _rho, _omega);
+            return relativeDistanceToCenter<=1 ? bell(relativeDistanceToCenter, _rho, _omega) : 0f;
         }
 
         public static float bell(float x, float m, float s)
