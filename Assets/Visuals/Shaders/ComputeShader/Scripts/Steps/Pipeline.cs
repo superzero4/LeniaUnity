@@ -1,42 +1,66 @@
 ﻿using System.Collections;
 using System.Linq;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Events;
+using Visuals.Shaders.ComputeShader.Scripts;
 
 public class Pipeline : MonoBehaviour, IComputeBufferProvider
 {
     [SerializeField, Range(0, 10f)] private float _initDelay;
     [SerializeField, Range(0, 10f)] private float _delay;
+    [SerializeField] private bool _finalUpdateOnly = true;
     [SerializeField] private bool _runOnce = false;
 
     private IInitValues _info;
-    private ComputeBuffer _buffer1;
-    private ComputeBuffer _buffer2;
+    private ComputeBuffer _shared;
 
-    private bool _toggle;
-    public ComputeBuffer ReadBuffer => _toggle ? _buffer1 : _buffer2;
-    public ComputeBuffer Buffer => _toggle ? _buffer2 : _buffer1;
     public Vector3Int Size3D => _info.Size;
+    private UnityEvent<ComputeBuffer> _onUpdate = new UnityEvent<ComputeBuffer>();
+    public UnityEvent<ComputeBuffer> OnUpdate => _onUpdate;
     private IStep[] _steps;
 
     private IEnumerator Start()
     {
         var init = GetComponentInChildren<IInitValues>(false);
-        IStep[] steps = GetComponentsInChildren<IStep>(false);
+        _steps = GetComponentsInChildren<IStep>(false);
         ReleaseBuffers();
         Init(init);
         Assert.IsNotNull(init, "Init values not found");
         Debug.Log("Init values : " +
-                  init.GetType().Name + "and steps : " + string.Join(", ", steps.Select(st => st.GetType().Name)));
-        foreach (IStep step in steps)
+                  init.GetType().Name + "and steps : " + string.Join("\n",
+                      _steps.Select(st => st.GetType().Name + " on " + (st as Component).gameObject.name)));
+        foreach (IStep step in _steps)
             step.Init(init);
 
         yield return new WaitForSeconds(_initDelay);
-        do
+        _onUpdate.Invoke(_shared);
+        while (!_runOnce)
         {
-            foreach (IStep step in steps)
-                yield return step.Step(_delay);
-        } while (!_runOnce);
+            yield return StepEnumerator();
+        }
+    }
+
+    private IEnumerator StepEnumerator()
+    {
+        foreach (IStep step in _steps)
+        {
+            yield return step.Step(_shared, _delay);
+            yield return new WaitForSeconds(_delay);
+            if (!_finalUpdateOnly)
+                _onUpdate.Invoke(_shared);
+        }
+
+        yield return new WaitForSeconds(_delay);
+        if (_finalUpdateOnly)
+            _onUpdate.Invoke(_shared);
+    }
+
+    [Button]
+    public void StepOnce()
+    {
+        StartCoroutine(StepEnumerator());
     }
 
     private void Init(IInitValues init)
@@ -45,21 +69,17 @@ public class Pipeline : MonoBehaviour, IComputeBufferProvider
         _info = init;
         var size = _info.TotalSize;
         Debug.Log($"Total size of the space : {size}");
-        _buffer1 = new ComputeBuffer(size, sizeof(float));
-        _buffer2 = new ComputeBuffer(size, sizeof(float));
-
-
+        _shared = new ComputeBuffer(size, sizeof(float));
         var values = init.InitialValues();
-        _buffer1.SetData(values);
-        _buffer2.SetData(values);
+        _shared.SetData(values);
     }
 
     private void ReleaseBuffers()
     {
-        _buffer1?.Release();
-        _buffer2?.Release();
-        foreach (IStep step in _steps)
-            step.Release();
+        _shared?.Release();
+        if (_steps != null)
+            foreach (IStep step in _steps)
+                step.Release();
     }
 
     private void OnDisable()

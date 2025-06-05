@@ -85,12 +85,6 @@ void ConvolMain(uint3 id : SV_DispatchThreadID) //kernel 2
     _Output[Index(id)] = Loop(id, convolDim);
 }
 
-[numthreads(THREADS_NUMBER,THREADS_NUMBER,THREADS_NUMBER)]
-void CopyToOutput(uint3 id : SV_DispatchThreadID) //kernel 3
-{
-    uint index = Index(id);
-    _Output[index] = _Input[index];
-}
 
 [numthreads(THREADS_NUMBER,THREADS_NUMBER,THREADS_NUMBER)]
 void CopyToFloat(uint3 id : SV_DispatchThreadID) //kernel 4
@@ -99,6 +93,12 @@ void CopyToFloat(uint3 id : SV_DispatchThreadID) //kernel 4
     _OutputF[index] = _Input[index];
 }
 
+[numthreads(THREADS_NUMBER,THREADS_NUMBER,THREADS_NUMBER)]
+void CopyToOutput(uint3 id : SV_DispatchThreadID) //kernel 3
+{
+    uint index = Index(id);
+    _Output[index] = _Input[index];
+}
 [numthreads(THREADS_NUMBER,THREADS_NUMBER,THREADS_NUMBER)]
 void CSMain(uint3 id : SV_DispatchThreadID) // Kernel 0
 {

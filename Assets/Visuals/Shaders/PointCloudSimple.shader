@@ -97,6 +97,10 @@ Shader "PointCloud/PointCloudSimple"
                 // Display the UVW for debug :
                 //color = float4(positionLife,1);
                 color = float4(life, 0, 0, 1);
+                if (life <= _FadedThreshold)
+                {
+                    color.a = 0;
+                }
                 o.color = color * _Tint;
                 return o;
             }

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Visuals.Shaders.ComputeShader.Scripts;
 
 namespace Visuals.Shaders.ComputeShader
 {

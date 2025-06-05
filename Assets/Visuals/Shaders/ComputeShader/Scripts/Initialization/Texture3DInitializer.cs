@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Visuals.Shaders.ComputeShader.Scripts;
 
 public class Texture3DInitializer : MonoBehaviour, IInitValues
 {

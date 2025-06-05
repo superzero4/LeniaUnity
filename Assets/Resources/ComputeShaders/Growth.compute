@@ -1,0 +1,107 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#define THREADS_NUMBER 1024
+#define USE_BELL_GROWTH 1
+#define USE_INT_GROWTH 1
+#pragma kernel CSMain
+#pragma kernel CopyToOutput
+
+
+StructuredBuffer<float> _Input;
+StructuredBuffer<float> _MidPut;
+RWStructuredBuffer<float> _Output;
+
+cbuffer ShaderParams
+{
+    unorm float dt; // time step
+    unorm float mu; // growth center
+    unorm float sigma; // growth width //Bert chan is 0.01f;
+}
+
+inline uint Index(uint id)
+{
+    return id;
+}
+
+inline uint Index(uint3 id)
+{
+    return id.x;
+}
+
+inline unorm float quadGrowth(unorm float n, unorm float m, unorm float s)
+{
+    //  np.maximum(0, 1 - (n-m)**2 / (9 * s**2) )**4
+    return pow(max(0, 1 - pow(n - m, 2) / (9 * s * s)), 4);
+}
+
+inline unorm float bellGrowth(float x, unorm float m, unorm float s)
+{
+    return exp(-pow(x - m, 2) / (2 * pow(s, 2)));
+}
+
+inline int intGrowth(int x)
+{
+    return 0 + (x >= 34 && x <= 45 ? 1 : 0) - (x < 33 || x > 57 ? 1 : 0);
+}
+
+[numthreads(THREADS_NUMBER,1,1)]
+void CopyToOutput(uint id : SV_DispatchThreadID) //kernel 1
+{
+    uint index = Index(id);
+    _Output[index] = _Input[index];
+}
+
+[numthreads(THREADS_NUMBER,1,1)]
+void CSMain(uint id : SV_DispatchThreadID) // Kernel 0
+{
+    //Last val
+    float val = _Input[Index(id)];
+
+    float avg = _MidPut[Index(id)]; //the cumulated result of all convolutions
+
+    unorm float rawGrowth =
+        #ifdef USE_INT_GROWTH
+        intGrowth(int(avg));
+    float growth = rawGrowth;
+    dt = 1;
+    #elif  USE_BELL_GROWTH
+            bellGrowth(avg, mu, sigma);
+    float growth = rawGrowth * 2.0 - 1.0;
+    #else
+        quadGrowth(avg, mu, sigma);
+    float growth = rawGrowth * 2.0 - 1.0;
+    #endif
+    unorm float color = clamp(val + dt * growth, 0.0, 1.0);
+    //const uint diam = diameter();
+    //Debug Kernel :
+    //color = (id.x < diam && id.y < diam && id.z < diam)
+    //            ? _kernel[KernelIndex(id-((int3)_Radius))]
+    //            : 0.f;
+    //Debug Kernel center lines (the one we use for 3X1D convolution)
+    //color = (id.x < diam && id.y < diam && id.z < diam && (id.x == _Radius || id.y == _Radius || id.z == _Radius))
+    //            ? _kernel[KernelIndex(id - ((int3)_Radius))]
+    //            : 0.f;
+    //color = (id.x == (ResX / 2) || id.y == (ResY/2) || id.z == (ResZ / 2))
+    //            ? id.x
+    //            : 0.f;
+    _Output[Index(id)] = color;
+
+    //color = quadGrowth(avg, mu, sigma);
+    //Debugging the quad kernel function "range"
+    //color = quad(sqrt(float(center.x * center.x + center.y * center.y + center.z * center.z)) / _Radius);
+    //avg =  .10f;
+    //Debugging index of the buffer : float displayedValue = float(Index(id))/float(ResX*ResY*2);
+    //_Output[id.xy] = float4(uv.x, uv.y, 0, 1);
+
+    /*
+    if (_Time.y < 10.f || mouse)
+    {
+        c = 0.013f + noise(float2(id.x, id.y));
+    }
+
+    
+    if (mouse)
+    {
+        float d = length((fragCoord.xy - iMouse.xy) / iResolution.xx);
+        if (d <= R/iResolution.x) c = 0.02 + noise(fragCoord/R + mod(_Time.y,1.)*100.);
+    }*/
+}

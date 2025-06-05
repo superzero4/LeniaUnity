@@ -1,0 +1,129 @@
+﻿#define THREADS_NUMBER 1024
+#pragma kernel ConvolMain
+#define MAXDIM 5 //dim must be fixed we use a very high max of 100 for the array size (we'll only use up to nbDim dynamic)
+
+
+
+#define Array_T uint
+#define Size [MAXDIM]
+#include <HLSLSupport.cginc>
+StructuredBuffer<float> _Input;
+RWStructuredBuffer<float> _Output;
+StructuredBuffer<float> _Kernel;
+
+
+cbuffer ShaderParams
+{
+    uint _Radius; // space resolution = kernel radius
+    float _KernelNorm;
+    uint _nbDim;
+    Array_T _Res Size;
+    int _ConvolDim;
+}
+
+inline uint Index(uint id Size)
+{
+    uint index = id[0];
+    uint factor = 1;
+    for (uint i = 1; i < _nbDim; i++)
+    {
+        factor *= _Res[i - 1];
+        index += id[i] * factor;
+    }
+    return index;
+}
+
+inline uint diameter()
+{
+    return 2 * _Radius + 1;
+}
+
+inline uint KernelIndex(int id Size)
+{
+    uint factor = 1;
+    uint index = 0;
+    uint diam = diameter();
+    for (uint i = 0; i < _nbDim; i++)
+    {
+        index += (id[i] + _Radius) * factor;
+        factor *= diam;
+    }
+    return index;
+}
+
+inline uint boundMod(int val, uint bound)
+{
+    uint sum = val + bound; //Positive as long as val isn't < -bounde
+    return sum % bound;
+}
+
+[numthreads(1024,1,1)]
+void ConvolMain(uint id : SV_DispatchThreadID) //kernel 0
+{
+    uint id1 = id;
+    uint idCoord Size;
+    int offsets Size;
+    int rad = (int)_Radius;
+    for (int i = _nbDim; i < MAXDIM; i++)
+    {
+        idCoord[i] = 0;
+        offsets[i] = 0;
+    }
+    uint temp = id1;
+    for (int j = 0; j < _nbDim; j++)
+    {
+        idCoord[j] = temp % _Res[j];
+        temp = temp / _Res[j];
+        offsets[j] = 0; //The center
+    }
+    float sum = 0.0f;
+    float total = 0.0f;
+    const int initial = idCoord[_ConvolDim];
+    UNITY_LOOP for (int index = -rad; index <= rad; index++)
+    {
+        offsets[_ConvolDim] = index;
+        idCoord[_ConvolDim] = boundMod(initial + index, _Res[_ConvolDim]);
+        float neighbourValue = _Input[Index(idCoord)];
+        // Kernel index is centered, it means 0 is the center of the kernel which is what we want actually, the center line, row or collumn
+        float weight = _Kernel[KernelIndex(offsets)];
+        sum += neighbourValue * weight;
+        total += weight;
+    }
+    //Kernel already normalize in the kernel itself
+    float value = sum;// / total;
+    //Resets for debug
+    idCoord[_ConvolDim] = initial;
+    offsets[_ConvolDim] = 0;
+
+    _Output[id1] = value;
+    return;
+    //_Output[id1] = _Input[Index(idCoord)] * _KernelValues[KernelIndex(offsets)];
+    //return;
+    //_Output[id1] = idCoord[_ConvolDim] * 1.f / (_Res[_ConvolDim] * 1.f);
+//
+    //const uint diam = diameter();
+    //const int radius = (int)_Radius;
+    ////Debug Kernel :
+    //float color = 0.f;
+    //int debugCoord PARR;
+    //for (int i = 0; i < _nbDim; i++)
+    //    debugCoord[i] = ((int)idCoord[i] - (int)_Res[i] / 2.f);
+    //color = (debugCoord[0] < diam && debugCoord[1] < diam && debugCoord[2] < diam)
+    //            ? _KernelValues[KernelIndex(debugCoord)]
+    //            : 0.f;
+    ////Debug Kernel center lines (the one we use for 3X1D convolution)
+    //bool inMiddle = (idCoord[0] == (_Res[0] / 2) || idCoord[1] == (_Res[1] / 2) || idCoord[2] == (_Res[2] / 2));
+    //bool inKernel =
+    //    (debugCoord[0] >= -radius && debugCoord[0] <= radius) &&
+    //    (debugCoord[1] >= -radius && debugCoord[1] <= radius) &&
+    //    (debugCoord[2] >= -radius && debugCoord[2] <= radius);
+    //color = inMiddle && inKernel
+    //            ? _KernelValues[KernelIndex(debugCoord)]
+    //            //? debugCoord[_ConvolDim] * 1.f / (1.f * _Radius)
+    //            //? ((KernelIndex(debugCoord) * 1 / (pow(diameter(), 3)))-.49f)*50.f
+    //            : 0.f;
+    ////color = (idCoord[0] == (_Res[0] / 2) || idCoord[1] == (_Res[1] / 2) || idCoord[2] == (_Res[2] / 2))
+    ////            ? idCoord[0] / (1.f * _Res[0])
+    ////            : 0.f;
+    ////_Output[id1] = color;
+}

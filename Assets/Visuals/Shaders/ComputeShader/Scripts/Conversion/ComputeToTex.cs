@@ -4,6 +4,7 @@ using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Serialization;
+using Visuals.Shaders.ComputeShader.Scripts;
 
 namespace Visuals.Shaders.ComputeShader
 {
