@@ -9,12 +9,13 @@ namespace Visuals.Shaders.ComputeShader.Scripts.ComputeShader.Scripts
 
         public override float KernelValue(uint[] coords, float relativeDistanceToCenter)
         {
-            return relativeDistanceToCenter<=1 ? bell(relativeDistanceToCenter, _rho, _omega) : 0f;
+            var temp = _omega / coords.Length;
+            return bell(relativeDistanceToCenter, _rho, temp);
         }
 
         public static float bell(float x, float m, float s)
         {
-            return Mathf.Exp(-Mathf.Pow(x-m, 2) / (2 * Mathf.Pow(s, 2)));
+            return Mathf.Exp(-Mathf.Pow(x - m, 2) / (2 * Mathf.Pow(s, 2)));
         }
     }
 }

@@ -8,7 +8,7 @@ public class PointCloudRendererSimple : MonoBehaviour
     [SerializeField, Range(0.00001f, 10f)] public float pointSize = 0.05f;
     [SerializeField, Range(0f, 5f)] public float randomOffset = 0.08f;
     [SerializeField, Range(0.0001f, 20f)] private float _sizeMultiplier = 1f;
-    [SerializeField, Range(0.0001f, 1f)] private float _fadedThreshold = 1f;
+    [SerializeField, Range(0f, 1f)] private float _fadedThreshold = 1f;
 
     private Material pointMaterial;
     private ComputeBuffer pointBuffer;

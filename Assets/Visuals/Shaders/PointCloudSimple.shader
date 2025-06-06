@@ -96,8 +96,8 @@ Shader "PointCloud/PointCloudSimple"
                 }
                 // Display the UVW for debug :
                 //color = float4(positionLife,1);
-                color = float4(life, 0, 0, 1);
-                if (life <= _FadedThreshold)
+                color = float4(life, life, life, 1);
+                if (life < _FadedThreshold)
                 {
                     color.a = 0;
                 }
@@ -139,7 +139,7 @@ Shader "PointCloud/PointCloudSimple"
             [maxvertexcount(36)]
             void geom(point v2f input[1], inout TriangleStream<v2f> triStream)
             {
-                if (input[0].color.a <= _FadedThreshold)
+                if (input[0].color.a < _FadedThreshold)
                 {
                     return;
                 }

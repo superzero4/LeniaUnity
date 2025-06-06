@@ -81,7 +81,8 @@ public class ConvolutionsStep : MonoBehaviour, IStep
     public IEnumerator ConvolAllDim(float delay)
     {
         ShaderCommons.LogBuffer(Entry, "Entry before convolution");
-        for (int i = 0; i < _info.nbDim; i++)
+        var order = Enumerable.Range(0, _info.nbDim);
+        foreach (int i in order)
         {
             DispatchConvol(i);
             if (delay > 0)
